@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Geometry Dash — Chaos Fix & VFX</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        :root {
+            --bg: #020617; --accent: #38bdf8; --danger: #ef4444; --event: #fcd34d;
+            --card-bg: rgba(15, 23, 42, 0.85); --glass-border: rgba(255, 255, 255, 0.1);
+        }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+.side-menu {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--card-bg);
+            border: 2px solid var(--accent);
+            border-left: none;
+            border-radius: 0 24px 24px 0;
+            padding: 25px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .side-menu-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            margin-bottom: 5px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .menu-item {
+            color: white;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            white-space: nowrap;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background: var(--accent);
+            color: #000;
+            transform: translateX(10px);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        canvas { background: linear-gradient(to bottom, #0f172a, #020617); border: 2px solid var(--glass-border); border-radius: 24px; }
+        .hud { position: absolute; top: 20px; display: flex; gap: 30px; background: var(--card-bg); padding: 10px 25px; border-radius: 15px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
+        .stat-val { font-size: 20px; font-weight: 800; color: var(--accent); }
+        #event-toast { position: fixed; top: 20%; font-size: 42px; font-weight: 800; color: var(--event); display: none; animation: zoom 1.2s; z-index: 3000; pointer-events: none; }
+        @keyframes zoom { 0% { transform: scale(0.5); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(1.2); opacity: 0; } }
+        #death-screen { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            text-decoration: none;
+            color: white;
+            background: var(--card-bg);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            font-weight: 600;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateX(5px);
+        }
+    
+    </style>
+</head>
+<body>
+<a href="/portfolio" class="back-link">
+    <span>←</span> Назад в портфолио
+</a>
+<div id="event-toast">MODE SWITCH!</div>
+<div id="death-screen">
+    <h1 style="color: var(--danger); font-size: 64px; margin:0;">GAME OVER</h1>
+    <p id="final-dist" style="font-size: 24px; margin: 20px 0;">Distance: 0m</p>
+    <button onclick="location.reload()" style="background: var(--accent); border:none; padding:15px 40px; border-radius:12px; font-weight:800; cursor:pointer; font-family: inherit;">RETRY</button>
+</div>
+
+
+<nav class="side-menu">
+    <div class="side-menu-title">New Year Hub</div>
+    <a href="/game/grinch" class="menu-item">🐲 ЗМЕЙКА</a>
+    <a href="/game/puzzles" class="menu-item">🧩 ПАЗЛЫ</a>
+    <a href="/game/ratatype" class="menu-item">⌨️ ТРЕНАЖЕР</a>
+    <a href="/game/gd" class="menu-item active">🟦 GEODASH</a>
+    <a href="/game/photo" class="menu-item ">📸 PHOTOEDITOR</a>
+    <a href="/game/dino" class="menu-item">🦖 ДИНОЗАВРИК</a>
+    <a href="/game/clicker" class="menu-item">💎 КЛИКЕР</a>
+</nav>
+
+
+<div class="hud">
+    <div style="text-align:center"><span class="stat-val" id="score">0</span><br><small>DIST</small></div>
+    <div style="text-align:center"><span class="stat-val" id="mode-name" style="color:var(--event)">NORMAL</span><br><small>MODE</small></div>
+    <div style="text-align:center"><span class="stat-val" id="speed-val">1.0x</span><br><small>SPEED</small></div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 900; canvas.height = 400;
+
+    let gravity = 0.5;
+    let currentSpeed = 6.8;
+    const JUMP_FORCE = -11.5;
+    const GROUND_Y = 320;
+    const CEILING_Y = 80;
+
+    let player = { x: 120, y: GROUND_Y - 40, w: 38, h: 38, dy: 0, rotation: 0, mode: 'NORMAL', lastY: 0 };
+    let obstacles = [];
+    let distance = 0;
+    let gameActive = true;
+    let frame = 0;
+    let isMouseDown = false;
+
+    // VFX Arrays
+    let trail = [];
+    let particles = [];
+
+    const modes = ['NORMAL', 'GRAVITY', 'FLY'];
+
+    function triggerRandomEvent() {
+        let newMode;
+        do { newMode = modes[Math.floor(Math.random() * modes.length)]; } while (newMode === player.mode);
+        player.mode = newMode;
+        gravity = Math.abs(0.5); 
+        const toast = document.getElementById('event-toast');
+        toast.innerText = newMode + " MODE!";
+        toast.style.display = 'block';
+        document.getElementById('mode-name').innerText = newMode;
+        setTimeout(() => toast.style.display = 'none', 1000);
+    }
+
+    function spawn() {
+        let rate = Math.max(35, 110 - Math.floor(currentSpeed * 4));
+        if (frame % rate === 0) {
+            const rand = Math.random();
+            let isCeiling = (player.mode !== 'NORMAL') && Math.random() > 0.7;
+            let x = canvas.width + 100;
+
+            if (rand < 0.2) { // 1. Одиночный шип
+                obstacles.push({ x, y: isCeiling ? CEILING_Y : GROUND_Y, type: 'spike', w: 40, h: 40, inv: isCeiling });
+            } 
+            else if (rand < 0.35) { // 2. Группы шипов (2-4 шт)
+                let count = Math.floor(Math.random() * 3) + 2; 
+                obstacles.push({ x, y: isCeiling ? CEILING_Y : GROUND_Y, type: 'spike_group', w: 40 * count, h: 40, inv: isCeiling, count });
+            } 
+            else if (rand < 0.5) { // 3. Разные блоки (высокие и низкие)
+                let h = [60, 80, 120][Math.floor(Math.random() * 3)];
+                obstacles.push({ x, y: isCeiling ? CEILING_Y : GROUND_Y - h, type: 'block', w: 40, h: h, inv: isCeiling });
+            } 
+            else if (rand < 0.65) { // 4. Платформа-коридор (блок в воздухе)
+                let yPos = 180;
+                obstacles.push({ x, y: yPos, type: 'block', w: 80, h: 40, inv: false });
+            }
+            else if (rand < 0.8) { // 5. ПИЛА (Saw) - теперь на разной высоте
+                let ySaw = isCeiling ? CEILING_Y + 40 : (Math.random() > 0.5 ? 200 : GROUND_Y - 80);
+                obstacles.push({ x, y: ySaw, type: 'saw', w: 50, h: 50, angle: 0 });
+            }
+            else { // 6. Двойная преграда (сверху и снизу одновременно)
+                obstacles.push({ x, y: GROUND_Y, type: 'spike', w: 40, h: 40, inv: false });
+                obstacles.push({ x, y: CEILING_Y, type: 'spike', w: 40, h: 40, inv: true });
+            }
+        }
+    }
+
+    function checkCollision(p, o) {
+        let px = p.x + 4, py = p.y + 4, pw = p.w - 8, ph = p.h - 8;
+        let ox = o.x, oy = o.y, ow = o.w, oh = o.h;
+        if (o.type === 'spike' || o.type === 'spike_group') {
+            let spikeY = o.inv ? oy : oy - oh;
+            return px < ox + ow && px + pw > ox && py < spikeY + oh && py + ph > spikeY;
+        }
+        if (o.type === 'saw') {
+            let dx = (px + pw/2) - (ox + ow/2);
+            let dy = (py + ph/2) - (oy + oh/2);
+            return Math.sqrt(dx*dx + dy*dy) < (ow/2 + pw/3);
+        }
+        return px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy;
+    }
+
+    function update() {
+        if (!gameActive) return;
+        currentSpeed += 0.0006;
+        document.getElementById('speed-val').innerText = (currentSpeed/6.8).toFixed(1) + "x";
+
+        if (player.mode === 'FLY' && isMouseDown) player.dy -= 0.85;
+        player.dy += gravity;
+        player.y += player.dy;
+
+        // VFX: Tracer Logic
+        trail.push({ x: player.x, y: player.y, rotation: player.rotation });
+        if (trail.length > 10) trail.shift();
+
+        // VFX: Dust Logic
+        if (player.y >= GROUND_Y - player.h - 2 || player.y <= CEILING_Y + 2) {
+            if (frame % 2 === 0) {
+                particles.push({
+                    x: player.x + 5,
+                    y: (player.y > 200) ? GROUND_Y : CEILING_Y,
+                    vx: -currentSpeed * 0.5,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 1.0,
+                    size: Math.random() * 4 + 1
+                });
+            }
+        }
+
+        // VFX: Update Particles
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.03;
+            if (p.life <= 0) particles.splice(i, 1);
+        });
+
+        if (player.y >= GROUND_Y - player.h) { player.y = GROUND_Y - player.h; player.dy = 0; }
+        if (player.y <= CEILING_Y) { player.y = CEILING_Y; player.dy = 0; }
+
+        player.rotation += currentSpeed * 1.5;
+
+        obstacles.forEach((obs, i) => {
+            obs.x -= currentSpeed;
+            if (obs.type === 'saw') obs.angle += 0.2;
+            if (checkCollision(player, obs)) {
+                gameActive = false;
+                document.getElementById('death-screen').style.display = 'flex';
+                document.getElementById('final-dist').innerText = `Distance: ${Math.floor(distance/10)}m`;
+            }
+            if (obs.x < -200) obstacles.splice(i, 1);
+        });
+
+        distance++;
+        if (distance % 1000 === 0) triggerRandomEvent();
+        document.getElementById('score').innerText = Math.floor(distance/10);
+        frame++; spawn();
+        player.lastY = player.y;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+        ctx.strokeRect(-10, CEILING_Y, canvas.width + 20, GROUND_Y - CEILING_Y);
+
+        // VFX: Draw Tracer
+        trail.forEach((t, i) => {
+            ctx.save();
+            ctx.globalAlpha = i / 30;
+            ctx.translate(t.x + player.w/2, t.y + player.h/2);
+            ctx.rotate(t.rotation * Math.PI / 180);
+            ctx.fillStyle = player.mode === 'NORMAL' ? '#38bdf8' : (player.mode === 'GRAVITY' ? '#a855f7' : '#fcd34d');
+            ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+            ctx.restore();
+        });
+
+        // VFX: Draw Particles
+        ctx.globalAlpha = 1;
+        particles.forEach(p => {
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+        });
+
+        // Player
+        ctx.save();
+        ctx.translate(player.x + player.w/2, player.y + player.h/2);
+        ctx.rotate(player.rotation * Math.PI / 180);
+        ctx.fillStyle = player.mode === 'NORMAL' ? '#38bdf8' : (player.mode === 'GRAVITY' ? '#a855f7' : '#fcd34d');
+        ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+        ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.strokeRect(-player.w/2 + 5, -player.h/2 + 5, player.w - 10, player.h - 10);
+        ctx.restore();
+
+        // Obstacles
+        obstacles.forEach(obs => {
+            ctx.shadowBlur = 0;
+            if (obs.type === 'block') {
+                ctx.fillStyle = '#1e293b'; ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h); ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+            } else if (obs.type === 'saw') {
+                ctx.save(); ctx.translate(obs.x + 25, obs.y + 25); ctx.rotate(obs.angle);
+                ctx.fillStyle = '#64748b';
+                for(let i=0; i<8; i++) { ctx.rotate(Math.PI/4); ctx.fillRect(-5, -30, 10, 20); }
+                ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill(); ctx.restore();
+            } else {
+                ctx.fillStyle = '#ef4444';
+                let count = obs.count || 1;
+                for(let j=0; j<count; j++) {
+                    let sx = obs.x + (j * 40);
+                    ctx.beginPath();
+                    if (obs.inv) { ctx.moveTo(sx, obs.y); ctx.lineTo(sx + 20, obs.y + 40); ctx.lineTo(sx + 40, obs.y); }
+                    else { ctx.moveTo(sx, obs.y); ctx.lineTo(sx + 20, obs.y - 40); ctx.lineTo(sx + 40, obs.y); }
+                    ctx.fill();
+                }
+            }
+        });
+
+        requestAnimationFrame(() => { update(); draw(); });
+    }
+
+    function act(down) {
+        isMouseDown = down;
+        if (!down || !gameActive) return;
+        
+        // VFX: Jump Particles
+        if ((player.mode === 'NORMAL' && player.dy === 0) || player.mode === 'GRAVITY') {
+            for(let i=0; i<8; i++) {
+                particles.push({
+                    x: player.x + 20, y: player.y + 20,
+                    vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8,
+                    life: 1.0, size: Math.random() * 5 + 2
+                });
+            }
+        }
+
+        if (player.mode === 'NORMAL' && player.dy === 0) player.dy = JUMP_FORCE;
+        if (player.mode === 'GRAVITY') { gravity = -gravity; player.dy = 0; }
+    }
+
+    window.onkeydown = e => { if(e.code === 'Space' || e.code === 'ArrowUp') act(true); };
+    window.onkeyup = e => { if(e.code === 'Space' || e.code === 'ArrowUp') act(false); };
+    canvas.onmousedown = () => act(true); canvas.onmouseup = () => act(false);
+
+    draw();
+</script>
+</body>
+</html>

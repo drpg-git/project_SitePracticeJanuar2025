@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Коды практики — Cyberpunk Edition</title>
+    <style>
+        :root {
+            --neon-color: #00f2ff;
+            --neon-yellow: #ffff00;
+            --bg-color: #0a0a0c;
+            --glitch-pink: #ff0055;
+            --glitch-blue: #00f2ff;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* --- ОГРОМНАЯ ЕЛКА --- */
+        .giant-tree {
+            position: fixed;
+            bottom: -5%;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 90vh;
+            z-index: 0;
+            opacity: 0.2;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 100, 0.3));
+            pointer-events: none;
+        }
+
+        /* --- ЭФФЕКТ СНЕГА --- */
+        #snow-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* --- ПОГОНЯ САНТЫ И ГРИНЧА --- */
+        .chase-wrapper {
+            position: fixed;
+            top: 10%;
+            left: -800px;
+            display: flex;
+            align-items: center;
+            z-index: 2;
+            pointer-events: none;
+            animation: fly-across 14s linear infinite;
+        }
+
+        .santa-img {
+            width: 300px;
+            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.4));
+        }
+
+        .grinch-img {
+            width: 600px;
+            margin-left: 1px;
+            filter: drop-shadow(0 0 15px rgba(255, 0, 85, 0.4));
+        }
+
+        @keyframes fly-across {
+            0% { left: -800px; transform: translateY(0) rotate(2deg); }
+            25% { transform: translateY(30px) rotate(-2deg); }
+            50% { transform: translateY(-30px) rotate(2deg); }
+            100% { left: 110vw; transform: translateY(0) rotate(-2deg); }
+        }
+
+        /* --- КНОПКА ВОЗВРАТА --- */
+        .back-to-portfolio {
+            position: absolute;
+            top: 25px; left: 25px;
+            padding: 12px 25px;
+            color: var(--neon-color);
+            text-decoration: none;
+            text-transform: uppercase;
+            font-weight: 900;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            border: 2px solid var(--neon-color);
+            background: transparent;
+            transition: 0.2s;
+            z-index: 1001;
+        }
+
+        .back-to-portfolio:hover {
+            color: var(--neon-yellow);
+            border-color: var(--neon-yellow);
+            box-shadow: 0 0 20px var(--neon-yellow);
+        }
+
+        /* --- КОНТЕНТ МЕНЮ --- */
+        .menu-container { position: relative; z-index: 10; text-align: center; }
+        h2 { text-transform: uppercase; letter-spacing: 5px; margin-bottom: 50px; text-shadow: 0 0 10px var(--neon-color); }
+        .nav-menu { display: flex; flex-direction: column; gap: 30px; }
+        .button-row { display: flex; align-items: center; gap: 20px; }
+
+        .nav-item {
+            text-decoration: none; color: var(--neon-color);
+            padding: 15px 40px; border: 2px solid var(--neon-color);
+            border-radius: 5px; font-size: 1.2rem; font-weight: bold;
+            text-transform: uppercase; min-width: 350px; text-align: center;
+            transition: 0.3s;
+            background: rgba(10, 10, 12, 0.8);
+        }
+
+        .nav-item:hover { background: var(--neon-color); color: #000; box-shadow: 0 0 40px var(--neon-color); }
+
+        .upgrade-btn {
+            width: 58px; height: 58px; border: 2px solid var(--neon-color);
+            border-radius: 5px; display: flex; justify-content: center; align-items: center;
+            transition: 0.2s; background: rgba(10, 10, 12, 0.8);
+        }
+
+        .upgrade-btn:hover { border-color: var(--neon-yellow); box-shadow: 0 0 25px var(--neon-yellow); transform: scale(1.1); }
+        .bolt-icon { width: 32px; fill: var(--neon-color); }
+        .upgrade-btn:hover .bolt-icon { fill: var(--neon-yellow); }
+    </style>
+</head>
+<body>
+
+<canvas id="snow-canvas"></canvas>
+
+<img src="/elka.gif" class="giant-tree" alt="Tree">
+
+<div class="chase-wrapper">
+    <img src="/santa.png" class="santa-img" alt="Santa">
+    <img src="/grinch.png" class="grinch-img" style="mix-blend-mode: screen; filter: hue-rotate(90deg);" alt="Grinch">
+</div>
+<a h="/portfolio" class="back-to-portfolio" id="backBtn">
+    &larr; Возврат к портфолио
+</a>
+
+<div class="menu-container">
+    <h2>Коды практики</h2>
+    <nav class="nav-menu">
+        <div class="button-row">
+            <a href="/practice/first" class="nav-item">#1 - Поймай квадрат</a>
+            <a href="/practice/first_exchanged" class="upgrade-btn">
+                <svg class="bolt-icon" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+            </a>
+        </div>
+        <div class="button-row">
+            <a href="/practice/second" class="nav-item">#2 - Угадай число</a>
+            <a href="/practice/second_exchanged" class="upgrade-btn">
+                <svg class="bolt-icon" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+            </a>
+        </div>
+        <div class="button-row">
+            <a href="/practice/third" class="nav-item">#3 - Мобильная игра</a>
+            <a href="/practice/third_exchanged" class="upgrade-btn">
+                <svg class="bolt-icon" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+            </a>
+        </div>
+    </nav>
+</div>
+
+<script>
+    const canvas = document.getElementById('snow-canvas');
+    const ctx = canvas.getContext('2d');
+    const backBtn = document.getElementById('backBtn');
+    let particles = [];
+
+    function initSnow() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particles = [];
+        for (let i = 0; i < 150; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2 + 1,
+                speed: Math.random() * 2 + 0.5
+            });
+        }
+    }
+
+    function drawSnow() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+            p.y += p.speed;
+            if (p.y > canvas.height) p.y = -10;
+        });
+        requestAnimationFrame(drawSnow);
+    }
+
+    backBtn.addEventListener('mouseenter', () => canvas.style.opacity = '1');
+    backBtn.addEventListener('mouseleave', () => canvas.style.opacity = '0');
+
+    window.addEventListener('resize', initSnow);
+    initSnow();
+    drawSnow();
+</script>
+
+</body>
+</html>

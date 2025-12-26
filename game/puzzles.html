@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Puzzle Master — Pro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        :root {
+            --bg: #020617;
+            --accent: #38bdf8;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --error: #ff003c;
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: white; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            align-items: center; min-height: 100vh; justify-content: center;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 999999;
+            text-decoration: none;
+            color: white;
+            background: var(--card-bg);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            font-weight: 600;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+        }
+
+        .back-link:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateX(5px);
+        }
+
+        .side-menu {
+            position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+            background: var(--card-bg); border: 2px solid var(--accent);
+            border-left: none; border-radius: 0 24px 24px 0; padding: 25px 15px;
+            display: flex; flex-direction: column; gap: 15px; z-index: 10001; 
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+        }
+        .side-menu-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); font-weight: 800; text-align: center; }
+        .menu-item {
+            color: white; text-decoration: none; font-size: 13px; font-weight: 700;
+            padding: 12px 20px; border-radius: 12px; background: rgba(255,255,255,0.03);
+            transition: 0.3s; text-align: center; border: 1px solid var(--glass-border);
+        }
+        .menu-item:hover, .menu-item.active { background: var(--accent); color: #000; transform: translateX(10px); }
+
+        #loading-overlay {
+            position: fixed; inset: 0; background: var(--bg);
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 9999; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .loader-container { width: 450px; text-align: center; }
+        #prompt-display { font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .progress-label { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 800; font-size: 14px; letter-spacing: 1px; color: var(--accent); }
+        .progress-track { height: 20px; width: 100%; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; border: 1px solid var(--glass-border); display: flex; gap: 3px; padding: 3px; }
+        .progress-cell { flex: 1; height: 100%; background: rgba(56, 189, 248, 0.05); transition: 0.2s; }
+        .progress-cell.active { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+
+        #fallback-timer { margin-top: 30px; color: var(--error); font-weight: 800; display: none; font-size: 20px; text-transform: uppercase; letter-spacing: 4px; animation: glitch 0.3s infinite; text-shadow: 2px 0 var(--accent), -2px 0 #ff00ff; }
+        @keyframes glitch { 0% { transform: skew(0deg); } 20% { transform: skew(3deg); opacity: 0.8; } 60% { transform: skew(-3deg); opacity: 1; } 100% { transform: skew(0deg); } }
+
+        #puzzle-board { width: 600px; height: 600px; background: rgba(15, 23, 42, 0.5); border: 2px solid var(--glass-border); position: relative; border-radius: 24px; box-shadow: 0 0 50px rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); opacity: 0; transition: 0.8s; }
+        .puzzle-piece { position: absolute; border: 1px solid rgba(255,255,255,0.1); cursor: grab; background-repeat: no-repeat; background-size: 600px 600px; z-index: 10; border-radius: 6px; transition: transform 0.2s, box-shadow 0.2s, opacity 0.5s; }
+        .puzzle-piece.locked { cursor: default; border: none; box-shadow: none; z-index: 5; transform: scale(1) !important; }
+        #timer-display { position: fixed; bottom: 30px; left: 30px; background: var(--card-bg); padding: 12px 24px; border-radius: 16px; border: 1px solid var(--accent); color: var(--accent); font-weight: 800; font-size: 18px; }
+        .tag-panel { background: var(--card-bg); padding: 15px 25px; border-radius: 24px; border: 1px solid var(--glass-border); margin-bottom: 20px; display: flex; gap: 12px; align-items: center; z-index: 50; backdrop-filter: blur(10px); }
+        .btn { border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; font-size: 12px; }
+        .gen-btn { background: var(--accent); color: #000; }
+
+        #win-screen { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
+        #final-art { width: 350px; height: 350px; border-radius: 24px; margin: 20px; border: 2px solid var(--accent); }
+        .back-btn { position: fixed; bottom: 30px; right: 30px; padding: 12px 24px; background: rgba(255,255,255,0.05); color: white; border-radius: 14px; text-decoration: none; border: 1px solid var(--glass-border); z-index: 1001; }
+
+        /* TROLL SYSTEM ANIMATIONS */
+        .troll-element {
+            position: fixed; z-index: 10005; color: #ff003c; font-weight: 900;
+            text-transform: uppercase; pointer-events: none; white-space: nowrap;
+            text-shadow: 0 0 15px rgba(255,0,60,0.8);
+        }
+
+        .anim-float { animation: troll-float 2.5s ease-out forwards; }
+        .anim-shake { animation: troll-shake 0.5s infinite, troll-fade 2.5s forwards; }
+        .anim-zoom { animation: troll-zoom 2.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
+
+        @keyframes troll-float { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(-200px) rotate(20deg); opacity: 0; } }
+        @keyframes troll-shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(2px, -2px); } }
+        @keyframes troll-zoom { 0% { transform: scale(0); opacity: 0; } 50% { opacity: 1; transform: scale(1.5); } 100% { transform: scale(1.2) rotate(-10deg); opacity: 0; } }
+        @keyframes troll-fade { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+    </style>
+</head>
+<body>
+<a href="/portfolio" class="back-link">
+    <span>←</span> Назад в портфолио
+</a>
+<nav class="side-menu">
+    <div class="side-menu-title">New Year Hub</div>
+    <a href="/game/grinch" class="menu-item">🐲 ЗМЕЙКА</a>
+    <a href="/game/puzzles" class="menu-item active">🧩 ПАЗЛЫ</a>
+    <a href="/game/ratatype" class="menu-item">⌨️ ТРЕНАЖЕР</a>
+    <a href="/game/gd" class="menu-item">🟦 GEODASH</a>
+    <a href="/game/photo" class="menu-item">📸 PHOTOEDITOR</a>
+    <a href="/game/dino" class="menu-item">🦖 ДИНОЗАВРИК</a>
+    <a href="/game/clicker" class="menu-item">💎 КЛИКЕР</a>
+</nav>
+
+<div id="loading-overlay">
+    <div class="loader-container">
+        <div id="prompt-display">PROMPT: FETCHING...</div>
+        <div class="progress-label">
+            <span id="loading-text">INITIALIZING NEURAL NETWORK...</span>
+            <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-track" id="track"></div>
+        <div id="fallback-timer">DATABASE TIMEOUT: <span id="sec-left">10</span>s</div>
+    </div>
+</div>
+
+<div id="timer-display">TIME: 00:00</div>
+
+<div id="win-screen">
+    <h1 style="color: var(--accent); letter-spacing: 4px;">MISSION COMPLETE</h1>
+    <p id="win-stats" style="font-weight: 600; color: #cbd5e1;"></p>
+    <img id="final-art" src="">
+    <div style="display: flex; gap: 15px;">
+        <button class="btn gen-btn" onclick="setAsAvatar()">SAVE TO PROFILE</button>
+        <button class="btn" style="background: var(--accent); color: black;" onclick="downloadArt()">DOWNLOAD IMAGE</button>
+        <button class="btn" style="background: white;" onclick="location.reload()">AGAIN</button>
+    </div>
+</div>
+
+<div class="tag-panel">
+    <input type="text" id="tag-input" placeholder="Enter prompt..." style="background:rgba(255,255,255,0.05); color:white; border:1px solid var(--glass-border); border-radius:10px; padding:10px; outline: none; width: 200px;">
+    <select id="diff-select" class="btn" style="background:#1e293b; color:white;">
+        <option value="3">3x3</option>
+        <option value="4">4x4</option>
+        <option value="5">5x5</option>
+    </select>
+    <button id="gen-main-btn" class="btn gen-btn" onclick="generateNew()">GENERATE</button>
+    <button class="btn" style="background:rgba(255,255,255,0.1); color:white;" onclick="document.getElementById('hint-modal').style.display='flex'">👁️ HINT</button>
+    <div id="counter" style="font-weight: 800; color: var(--accent); min-width: 50px; text-align: right;">0/0</div>
+</div>
+
+<div id="puzzle-board"></div>
+
+<div id="hint-modal" onclick="this.style.display='none'" style="position:fixed; inset:0; background:rgba(2,6,23,0.9); display:none; justify-content:center; align-items:center; z-index:9500; backdrop-filter: blur(10px);">
+    <img id="hint-img" style="width:500px; border-radius:24px; border: 2px solid var(--accent);">
+</div>
+
+<a href="/" class="back-btn">← EXIT</a>
+
+<script>
+    let seconds = 0, timerActive = false, timerInterval;
+    const board = document.getElementById('puzzle-board');
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentTags = urlParams.get('tags') || 'winter, cyberpunk, neon';
+    const grid = parseInt(urlParams.get('size')) || 4;
+    
+    document.getElementById('tag-input').value = currentTags;
+    document.getElementById('prompt-display').innerText = `PROMPT: ${currentTags.toUpperCase()}`;
+    document.getElementById('diff-select').value = grid;
+
+    const pieceSize = 600 / grid;
+    const totalPieces = grid * grid;
+    let lockedCount = 0;
+
+    // --- MEGA TROLL SYSTEM ---
+    const filters = ['18+', 'sex', 'nsfw', 'porn', 'nude', 'sexy', 'naked', 'boobs', 'pussy', 'dick', 'hentai', 'эротика', 'секс', 'порно', 'голая', 'сиськи', 'оргазм', 'член', 'влагалище', 'анал', 'минет', 'куни', 'трах', 'ебля', 'шлюха', 'проститутка', 'бдсм', 'bdsm', 'erotic', 'ass', 'butt', 'vagina', 'clitoris', 'boobies', 'nipples', 'penis', 'cock', 'cum', 'ejaculation', 'milf', 'dilf', 'gay', 'lesbian', 'orgasm', 'masturbation', 'pornstar', 'webcam', 'escort', 'underwear', 'lingerie', 'thong', 'bikini', 'topless', 'bottomless', 'nakedness', 'nudity', 'stripper', 'striptease', 'blowjob', 'handjob', 'cunnilingus', 'anal', 'foursome', 'threesome', 'gangbang', 'swinger', 'fetish', 'latex', 'bondage', 'spanking', 'dominatrix', 'submissive', 'kink', 'incest', 'taboo', 'voyeur', 'exhibitionist', 'peeing', 'squirting', 'deepthroat', 'rimming', 'fisting', 'dildo', 'vibrator', 'pornographic', 'softcore', 'hardcore', 'adult', 'xxx', 'x-rated', 'sensual', 'hot', 'steamy', 'lust', 'passion', 'intercourse', 'copulation', 'shame'];
+
+    const phrases = ['АЙ-АЙ-АЙ!', 'ШАЛУНИШКА 😏', 'МАМЕ РАССКАЖУ!', 'КТО ТУТ ПЛОХОЙ МАЛЬЧИК? 🫦', 'ПОБОЙСЯ БОГА!', 'FBI УЖЕ ЕДЕТ', 'ЧЕГО ЗАХОТЕЛ!', '🍑 ПЕРСИКОВ НЕТ', 'ИЩИ В ДРУГОМ МЕСТЕ', 'ЩАС БАН ПРИЛЕТИТ', 'ФУ ТАКИМ БЫТЬ!', 'ТЕБЕ НЕ СТЫДНО?', 'А ГЛАЗКИ-ТО ГОРЯТ!', 'РУКИ НА СТОЛ!', 'ОПЯТЬ ТЫ ЗА СВОЕ?', 'ПОЗОРИЩЕ!', 'ТЫ КУДА ЖМЕШЬ?', 'ГРЕШНОВАТО...', 'ОЙ ВСЁ!', 'ВЫЗЫВАЙТЕ ПОЛИЦИЮ НРАВОВ', 'ТВОЯ МАМА ЭТО ВИДИТ?', 'ИСПОЛЬЗУЙ МОЗГ, А НЕ ЭТО', 'ТЫ ЧЕГО ТАКОЙ ОЗАБОЧЕННЫЙ?', 'ФУ-ФУ-ФУ!', 'КАКОЙ УЖАС!', 'МЫ ВСЁ ЗАПИСАЛИ', 'ТВОЯ ИСТОРИЯ БРАУЗЕРА — ЭТО АД', 'ИДИ ПОМОЙСЯ', 'ГРЯЗНЫЕ МЫСЛИ!', 'ТЫ МЕНЯ ПУГАЕШЬ', 'НЕ В ЭТУ СМЕНУ', 'ОСТАНОВИСЬ!', 'ХВАТИТ!', 'ЭТО УЖЕ ПЕРЕБОР', 'ТЫ БОЛЕН?', 'ОТДОХНИ ОТ ИНТЕРНЕТА', 'КУПИ СЕБЕ ДЕВУШКУ', 'ИДИ ПОТРОГАЙ ТРАВУ', 'БОЛЬШЕ КНИГ — МЕНЬШЕ ПОРНО', 'ФУ, ГАДОСТЬ!', 'КТО БЫ МОГ ПОДУМАТЬ...', 'ТИХИЙ ОМУТ, ДА?', 'ТЫ СЕРЬЕЗНО?', 'М-ДА...', 'КЛИНИКА', 'ТЕБЕ НУЖНА ПОМОЩЬ', 'BONK!', 'HORNY JAIL ЖДЕТ', 'НЕ СЕГОДНЯ, БРАТАН', 'ПРОСТО НЕТ.', 'ТЫ ЖЕ ТАКОЙ ХОРОШИЙ БЫЛ', 'РАЗОЧАРОВАНИЕ...', 'ИСЧЕЗНИ!', 'БРЫСЬ!', 'ПОШЛЯК!', 'КУДА КАТИТСЯ МИР', 'ТЫ ПРОБИЛ ДНО', 'ХУЖЕ НЕКУДА', 'АНИМЕ-ГРЕШНИК!', 'ТВОЯ ПОДУШКА ТЕБЯ ПРЕДАСТ', 'ЧИСТОЕ ЗЛО', 'ОЗОРНИК!', 'НЕ ПРИ ДЕТЯХ!', 'СКРОЙСЯ!', 'ТЫ МЕНЯ СМУЩАЕШЬ', 'УДАЛИ ЭТО!', 'ГЛАЗА МОИ БЫ НЕ ВИДЕЛИ', 'ТЫ ЧТО ТВОРИШЬ?', 'СЛАБОСТЬ — ЭТО ТВОЁ', 'БУДЬ МУЖИКОМ, СБЕРЕГИ ГЛАЗА', 'ТЫ ПРОИГРАЛ ЭТУ ЖИЗНЬ', 'НЕУДАЧНИК 😏', 'ПРОСТО ФУ', 'ХА-ХА, НЕТ', 'МЕЧТАТЬ НЕ ВРЕДНО', 'СЛИШКОМ МНОГО ГОРМОНОВ', 'ИДИ ПОСПИ', 'ТЫ ВЕК СЕКСА НЕ УВИДИШЬ', 'ЖАЛКОЕ ЗРЕЛИЩЕ', 'ТЫ ПОПАЛСЯ!', 'ПРАНК ПОШЕЛ НЕ ТАК', 'ПРОСТИ, Я НЕ ТАКАЯ', 'НЕ ДЛЯ ТЕБЯ ЯГОДКА РОСЛА', 'ИДИ РАБОТАЙ', 'ТУНЕЯДЕЦ-ПОШЛЯК!', 'ТЫ ЧТО, ИЗ ЭТИХ?', 'НУ ТЫ И ТИП!', 'МЫ В ШОКЕ', 'СИСТЕМА В ШОКЕ', 'НЕЙРОСЕТЬ ПЛАЧЕТ', 'ТЫ СЛОМАЛ МОЮ ПСИХИКУ', 'ЭТО КОНЕЦ', 'ТЫ УВОЛЕН', 'ИЗЫДИ!', 'ЧУР МЕНЯ!', 'КЫШ ОТСЮДА!', 'ТЫ МЕНЯ ДОСТАЛ', 'БОЛЬШЕ НИКАКИХ ПАЗЛОВ ТЕБЕ', 'ТЫ ЭТОГО НЕ ПОЛУЧИШЬ', 'СМИРИСЬ'];
+
+    const emojis = ['🫦', '🍑', '🍒', '🔥', '🍆', '💦', '😏', '👿', '🔞', '🤡', '🤮', '👮‍♂️', '🚩', '🚫', '💩', '🧼'];
+
+    function spawnTroll() {
+        if (!filters.some(word => currentTags.toLowerCase().includes(word))) return;
+        const div = document.createElement('div');
+        const animations = ['anim-float', 'anim-shake', 'anim-zoom'];
+        div.className = 'troll-element ' + animations[Math.floor(Math.random() * animations.length)];
+        div.style.left = Math.random() * 80 + 10 + '%';
+        div.style.top = Math.random() * 80 + 10 + '%';
+        div.style.fontSize = Math.random() * 25 + 20 + 'px';
+        div.innerText = Math.random() > 0.3 ? phrases[Math.floor(Math.random() * phrases.length)] : emojis[Math.floor(Math.random() * emojis.length)];
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 2500);
+    }
+    const trollInterval = setInterval(spawnTroll, 250);
+    // ----------------------
+
+    const loadingPhrases = ["CONNECTING TO NEURAL HUB...", "STABILIZING LATENT SPACE...", "FRACTALISING PIXELS...", "INJECTING CHRISTMAS SPIRIT...", "SAMPLING DIFFUSION MODELS...", "DECODING TENSOR CORES..."];
+    const track = document.getElementById('track');
+    for(let i=0; i<30; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'progress-cell';
+        track.appendChild(cell);
+    }
+
+    let progress = 0;
+    let loadingFinished = false;
+    let stuckAt95Time = 0;
+
+    const progressInt = setInterval(() => {
+        if (!loadingFinished) {
+            if (progress < 95) {
+                progress += Math.random() * 1.5;
+                if(progress > 95) progress = 95;
+                updateProgress(progress);
+                if(Math.random() > 0.9) document.getElementById('loading-text').innerText = loadingPhrases[Math.floor(Math.random()*loadingPhrases.length)];
+            } else {
+                stuckAt95Time += 200;
+                if(stuckAt95Time >= 5000 && !document.getElementById('loading-overlay').classList.contains('emergency-bg')) triggerEmergency();
+            }
+        }
+    }, 200);
+
+    function updateProgress(val) {
+        const p = Math.min(Math.round(val), 100);
+        document.getElementById('progress-pct').innerText = p + '%';
+        const activeCells = Math.floor((p / 100) * 30);
+        const cells = document.querySelectorAll('.progress-cell');
+        cells.forEach((c, i) => { if(i < activeCells) c.classList.add('active'); });
+    }
+
+    let finalImgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(currentTags)}?width=600&height=600&nologo=true&seed=${Math.floor(Math.random()*999999)}`;
+    
+    function triggerEmergency() {
+        document.getElementById('loading-overlay').classList.add('emergency-bg');
+        document.getElementById('fallback-timer').style.display = 'block';
+        let timeLeft = 10;
+        const emergencyInterval = setInterval(async () => {
+            if (loadingFinished) { clearInterval(emergencyInterval); return; }
+            timeLeft--;
+            document.getElementById('sec-left').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(emergencyInterval);
+                const res = await fetch('/latest-avatar');
+                const data = await res.json();
+                finalImgUrl = data.path || 'https://via.placeholder.com/600';
+                img.src = finalImgUrl; 
+            }
+        }, 1000);
+    }
+
+    const img = new Image();
+    function preloadImage() {
+        img.onload = () => {
+            loadingFinished = true;
+            updateProgress(100);
+            clearInterval(trollInterval);
+            setTimeout(() => {
+                document.getElementById('loading-overlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    board.style.opacity = '1';
+                }, 500);
+                initPuzzle();
+            }, 600);
+        };
+        img.src = finalImgUrl;
+    }
+
+    function initPuzzle() {
+        document.getElementById('counter').innerText = `0/${totalPieces}`;
+        document.getElementById('hint-img').src = finalImgUrl;
+        document.getElementById('final-art').src = finalImgUrl;
+        for (let r = 0; r < grid; r++) {
+            for (let c = 0; c < grid; c++) {
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece';
+                piece.dataset.correctX = c * pieceSize;
+                piece.dataset.correctY = r * pieceSize;
+                piece.style.width = pieceSize + 'px';
+                piece.style.height = pieceSize + 'px';
+                piece.style.backgroundImage = `url(${finalImgUrl})`;
+                piece.style.backgroundPosition = `-${c * pieceSize}px -${r * pieceSize}px`;
+                let startX = Math.random() > 0.5 ? (window.innerWidth/2 + 350) : (window.innerWidth/2 - 600);
+                piece.style.left = (startX + Math.random()*150) + 'px';
+                piece.style.top = (Math.random()*(window.innerHeight-pieceSize)) + 'px';
+                makeDraggable(piece);
+                document.body.appendChild(piece);
+            }
+        }
+    }
+
+    function makeDraggable(el) {
+        let isDragging = false, offset = { x: 0, y: 0 };
+        el.addEventListener('mousedown', e => {
+            if(el.classList.contains('locked')) return;
+            if(!timerActive) {
+                timerActive = true;
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    let m = Math.floor(seconds/60).toString().padStart(2, '0');
+                    let s = (seconds%60).toString().padStart(2, '0');
+                    document.getElementById('timer-display').innerText = `TIME: ${m}:${s}`;
+                }, 1000);
+            }
+            isDragging = true;
+            offset = { x: el.offsetLeft - e.clientX, y: el.offsetTop - e.clientY };
+        });
+        document.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            el.style.left = (e.clientX + offset.x) + 'px';
+            el.style.top = (e.clientY + offset.y) + 'px';
+        });
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            const br = board.getBoundingClientRect();
+            const tx = parseFloat(el.dataset.correctX), ty = parseFloat(el.dataset.correctY);
+            if (Math.abs((el.offsetLeft - br.left) - tx) < 30 && Math.abs((el.offsetTop - br.top) - ty) < 30) {
+                el.style.left = (br.left + tx) + 'px'; el.style.top = (br.top + ty) + 'px';
+                if(!el.classList.contains('locked')) {
+                    el.classList.add('locked'); lockedCount++;
+                    document.getElementById('counter').innerText = `${lockedCount}/${totalPieces}`;
+                    if(lockedCount === totalPieces) {
+                        clearInterval(timerInterval);
+                        document.getElementById('win-stats').innerText = `COMPLETED IN ${document.getElementById('timer-display').innerText}`;
+                        document.getElementById('win-screen').style.display = 'flex';
+                    }
+                }
+            }
+        });
+    }
+
+    async function setAsAvatar() {
+        const response = await fetch(finalImgUrl);
+        const blob = await response.blob();
+        const fd = new FormData(); fd.append('avatar', new File([blob], "puzzle.jpg"));
+        await fetch('/upload', { method: 'POST', body: fd });
+        alert("PROFILE UPDATED!");
+    }
+
+    async function downloadArt() {
+        const response = await fetch(finalImgUrl);
+        const blob = await response.blob();
+        const a = document.createElement('a');
+        a.href = window.URL.createObjectURL(blob);
+        a.download = `art.jpg`;
+        a.click();
+    }
+
+    function generateNew() {
+        window.location.href = `?tags=${encodeURIComponent(document.getElementById('tag-input').value)}&size=${document.getElementById('diff-select').value}`;
+    }
+
+    window.onload = preloadImage;
+</script>
+</body>
+</html>

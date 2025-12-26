@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoEditor — New Year Hub</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        :root {
+            --bg: #020617;
+            --accent: #38bdf8;
+            --card-bg: rgba(15, 23, 42, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        * { box-sizing: border-box; cursor: none !important; }
+        body { 
+            margin: 0; background: var(--bg); color: white; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            display: flex; height: 100vh; overflow: hidden;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            text-decoration: none;
+            color: white;
+            background: var(--card-bg);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            font-weight: 600;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateX(5px);
+        }
+
+
+        .cursor { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; position: fixed; pointer-events: none; z-index: 10000; }
+        .cursor-follower { width: 30px; height: 30px; border: 2px solid var(--accent); border-radius: 50%; position: fixed; pointer-events: none; z-index: 10000; transition: 0.1s; opacity: 0.5; }
+
+        .side-menu {
+            position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+            background: var(--card-bg); border: 2px solid var(--accent);
+            border-left: none; border-radius: 0 24px 24px 0; padding: 25px 15px;
+            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+        }
+
+        .side-menu-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 5px; font-weight: 800; text-align: center; }
+        .menu-item { color: white; text-decoration: none; font-size: 13px; font-weight: 700; padding: 12px 20px; border-radius: 12px; background: rgba(255,255,255,0.03); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-align: center; border: 1px solid var(--glass-border); white-space: nowrap; }
+        .menu-item:hover, .menu-item.active { background: var(--accent); color: #000; transform: translateX(10px); box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+
+        .app-main { margin-left: 90px; flex: 1; display: grid; grid-template-columns: 1fr 380px; }
+        .workspace { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; background: radial-gradient(circle at center, #0f172a, #020617); position: relative; }
+        .workspace.drag-over { background: radial-gradient(circle at center, #1e293b, #020617); border: 2px dashed var(--accent); }
+
+        .upload-area { margin-bottom: 20px; display: flex; gap: 15px; }
+        .canvas-frame {
+            position: relative; border: 1px solid var(--glass-border);
+            background: repeating-conic-gradient(#0f172a 0% 25%, #161e31 0% 50%) 50% / 20px 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.6); border-radius: 20px;
+            max-width: 100%; max-height: 70vh; overflow: auto; display: flex;
+        }
+
+        .shredding { animation: shred 1.2s forwards ease-in-out; }
+        @keyframes shred { 0% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 100% 0 0); opacity: 0.5; } }
+
+        #main-canvas { max-width: 100%; height: auto; }
+
+        .editor-aside { background: var(--card-bg); border-left: 1px solid var(--glass-border); padding: 30px; display: flex; flex-direction: column; gap: 20px; backdrop-filter: blur(25px); overflow-y: auto; }
+        .tool-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 18px; border-radius: 20px; }
+        .tool-card h4 { margin: 0 0 15px 0; font-size: 13px; text-transform: uppercase; color: var(--accent); letter-spacing: 1px; }
+
+        .btn-action { background: linear-gradient(135deg, #38bdf8, #818cf8); border: none; padding: 14px; border-radius: 12px; color: white; font-weight: 800; width: 100%; transition: 0.3s; margin-top: 10px; cursor: pointer; }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3); }
+
+        .progress-box { display: none; margin-top: 10px; }
+        .bar-container { display: flex; gap: 3px; background: #020617; padding: 4px; border: 1px solid var(--accent); height: 25px; }
+        .bar-cell { flex: 1; background: var(--accent); opacity: 0.1; transition: 0.2s; }
+        .bar-cell.on { opacity: 1; box-shadow: 0 0 8px var(--accent); }
+
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .input-dark { background: #020617; border: 1px solid var(--glass-border); color: #fff; padding: 10px; border-radius: 10px; width: 100%; font-family: inherit; }
+
+        .slider-box { margin-bottom: 12px; }
+        .slider-box label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; opacity: 0.8; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); }
+        #snow { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+
+        #text-tooltip {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--card-bg); border: 2px solid var(--accent);
+            padding: 12px 20px; border-radius: 20px; display: none; z-index: 2000;
+            backdrop-filter: blur(15px); box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+            flex-direction: row; align-items: center; gap: 15px; 
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            opacity: 0;
+        }
+        #text-tooltip.active { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+<a href="/portfolio" class="back-link">
+    <span>←</span> Назад в портфолио
+</a>
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+    <canvas id="snow"></canvas>
+
+    <div id="text-tooltip">
+        <div style="display:flex; flex-direction:column; gap:2px;">
+            <label style="font-size: 9px; color: var(--accent); font-weight:800;">ШРИФТ</label>
+            <select id="tt-font" class="input-dark" style="padding: 5px; min-width: 100px;">
+                <option value="Plus Jakarta Sans">Jakarta</option>
+                <option value="Arial">Arial</option>
+                <option value="Courier New">Monospace</option>
+            </select>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:2px;">
+            <label style="font-size: 9px; color: var(--accent); font-weight:800;">ЦВЕТА</label>
+            <div style="display:flex; gap:5px;">
+                <input type="color" id="tt-color" title="Заливка" style="width:30px; height:30px; border-radius:5px; border:1px solid var(--glass-border); background:none;">
+                <input type="color" id="tt-stroke" title="Обводка" style="width:30px; height:30px; border-radius:5px; border:1px solid var(--glass-border); background:none;">
+            </div>
+        </div>
+        <button class="btn-action" style="margin:0; padding:10px 15px; background:#ef4444;" onclick="deleteText()">УДАЛИТЬ 🗑️</button>
+    </div>
+
+    <nav class="side-menu">
+        <div class="side-menu-title">New Year Hub</div>
+        <a href="/game/grinch" class="menu-item">🐲 ЗМЕЙКА</a>
+        <a href="/game/puzzles" class="menu-item">🧩 ПАЗЛЫ</a>
+        <a href="/game/ratatype" class="menu-item">⌨️ ТРЕНАЖЕР</a>
+        <a href="/game/gd" class="menu-item">🟦 GEODASH</a>
+        <a href="/game/photo" class="menu-item active">📸 PHOTOEDITOR</a>
+        <a href="/game/dino" class="menu-item ">🦖 ДИНОЗАВРИК</a>
+        <a href="/game/clicker" class="menu-item">💎 КЛИКЕР</a>
+    </nav>
+
+    <div class="app-main">
+        <section class="workspace" id="drop-zone">
+            <div class="upload-area">
+                <button class="btn-action" style="width: auto; padding: 12px 30px;" onclick="document.getElementById('f').click()">📁 ВЫБРАТЬ ФОТО</button>
+                <button class="btn-action" style="width: auto; padding: 12px 30px; background: #1e293b;" onclick="download()">💾 СОХРАНИТЬ</button>
+                <button class="btn-action" style="width: auto; padding: 12px 30px; background: #334155;" onclick="undo()">↩️ НАЗАД</button>
+            </div>
+            <div class="canvas-frame">
+                <canvas id="main-canvas"></canvas>
+            </div>
+            <div style="font-size: 11px; opacity: 0.5; margin-top:10px;">Двойной клик — текст, Угол — масштаб, Ctrl+V — вставка</div>
+            <input type="file" id="f" hidden accept="image/*">
+        </section>
+
+        <aside class="editor-aside">
+            <h2 style="margin:0; font-size: 26px;">Фото Редактор</h2>
+            
+            <div class="tool-card">
+                <h4>AI Инструменты</h4>
+                <button class="btn-action" style="background: linear-gradient(135deg, #f43f5e, #fb7185);" onclick="removeBg()">✨ УДАЛИТЬ ФОН (AI)</button>
+                <button class="btn-action" style="background: linear-gradient(135deg, #a855f7, #ec4899); margin-top: 8px;" onclick="neuralUpscale()">🧠 NEURAL UPSCALE (AI)</button>
+                <div class="progress-box" id="p-box">
+                    <div class="bar-container" id="p-bar"></div>
+                    <div id="p-percent" style="font-size: 10px; text-align: center; margin-top: 5px; color: var(--accent);">0%</div>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <h4>🔄 Трансформация</h4>
+                <div class="input-grid">
+                    <input type="number" id="res-w" class="input-dark" placeholder="W" onchange="resizeImage()">
+                    <input type="number" id="res-h" class="input-dark" placeholder="H" onchange="resizeImage()">
+                </div>
+                <div class="input-grid" style="margin-top: 10px;">
+                    <button class="btn-action" style="font-size: 11px; padding: 8px;" onclick="rotate(90)">🔄 +90°</button>
+                    <button class="btn-action" style="font-size: 11px; padding: 8px;" onclick="rotate(-90)">🔄 -90°</button>
+                </div>
+                <div class="input-grid" style="margin-top: 10px;">
+                    <button class="btn-action" style="font-size: 11px; padding: 8px;" onclick="flip('H')">↔️ ГОР. ОТЗЕРК.</button>
+                    <button class="btn-action" style="font-size: 11px; padding: 8px;" onclick="flip('V')">↕️ ВЕРТ. ОТЗЕРК.</button>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <h4>🎨 Цветокоррекция</h4>
+                <div class="slider-box"><label>Яркость <span>100%</span></label><input type="range" id="br" min="0" max="200" value="100" oninput="draw()"></div>
+                <div class="slider-box"><label>Контраст <span>100%</span></label><input type="range" id="ct" min="0" max="200" value="100" oninput="draw()"></div>
+                <div class="slider-box"><label>Насыщенность <span>100%</span></label><input type="range" id="sat" min="0" max="200" value="100" oninput="draw()"></div>
+                <div class="slider-box"><label>Сепия <span>0%</span></label><input type="range" id="sepia" min="0" max="100" value="0" oninput="draw()"></div>
+                <div class="slider-box"><label>Инверсия <span>0%</span></label><input type="range" id="inv" min="0" max="100" value="0" oninput="draw()"></div>
+                <div class="slider-box"><label>Размытие <span>0px</span></label><input type="range" id="bl" min="0" max="20" value="0" oninput="draw()"></div>
+            </div>
+
+            <div class="tool-card">
+                <h4>✍️ Текст</h4>
+                <input type="text" id="t-text" class="input-dark" placeholder="Введите текст...">
+                <button class="btn-action" onclick="addText()">➕ СОЗДАТЬ ТЕКСТ</button>
+            </div>
+
+            <button class="btn-action" style="margin-top:auto; background: #334155;" onclick="location.reload()">СБРОСИТЬ</button>
+        </aside>
+    </div>
+
+    <script>
+        const c = document.querySelector('.cursor'), f = document.querySelector('.cursor-follower');
+        document.addEventListener('mousemove', e => {
+            c.style.left = e.clientX+'px'; c.style.top = e.clientY+'px';
+            f.style.left = e.clientX-11+'px'; f.style.top = e.clientY-11+'px';
+        });
+
+        const canvas = document.getElementById('main-canvas'), ctx = canvas.getContext('2d');
+        let img = new Image();
+        let history = [], texts = [];
+        let selectedIdx = -1, isDragging = false, isResizing = false;
+        let resizeAnchorY = 0, initialSize = 0;
+
+        const pb = document.getElementById('p-bar');
+        for(let i=0; i<15; i++) pb.innerHTML += `<div class="bar-cell"></div>`;
+
+        function saveState() {
+            history.push({imgSrc: img.src, texts: JSON.parse(JSON.stringify(texts)), w: canvas.width, h: canvas.height});
+            if(history.length > 20) history.shift();
+        }
+
+        function undo() {
+            if(!history.length) return;
+            const last = history.pop();
+            const temp = new Image();
+            temp.onload = () => { img = temp; texts = last.texts; canvas.width = last.w; canvas.height = last.h; draw(); };
+            temp.src = last.imgSrc;
+        }
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const temp = new Image();
+                temp.onload = () => { 
+                    saveState(); img = temp; 
+                    canvas.width = img.width; canvas.height = img.height; 
+                    document.getElementById('res-w').value = canvas.width;
+                    document.getElementById('res-h').value = canvas.height;
+                    draw(); 
+                };
+                temp.src = ev.target.result;
+            };
+            r.readAsDataURL(file);
+        }
+
+        document.getElementById('f').onchange = e => handleFile(e.target.files[0]);
+        window.addEventListener('paste', e => {
+            const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+            if (item) handleFile(item.getAsFile());
+        });
+
+        const dz = document.getElementById('drop-zone');
+        window.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+        window.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+
+        function draw() {
+            if(!img.src) return;
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            
+            const filters = [
+                `brightness(${document.getElementById('br').value}%)`,
+                `contrast(${document.getElementById('ct').value}%)`,
+                `saturate(${document.getElementById('sat').value}%)`,
+                `sepia(${document.getElementById('sepia').value}%)`,
+                `invert(${document.getElementById('inv').value}%)`,
+                `blur(${document.getElementById('bl').value}px)`
+            ].join(' ');
+            
+            ctx.filter = filters;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            ctx.filter = 'none';
+
+            texts.forEach((t, i) => {
+                ctx.font = `bold ${t.size}px "${t.font}"`;
+                t.w = ctx.measureText(t.val).width; t.h = t.size;
+                if(i === selectedIdx) {
+                    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+                    ctx.strokeRect(t.x - 5, t.y - t.h, t.w + 10, t.h + 10);
+                    ctx.fillStyle = '#38bdf8'; ctx.fillRect(t.x + t.w + 2, t.y + 2, 12, 12);
+                }
+                ctx.lineWidth = t.size / 8; ctx.strokeStyle = t.stroke; ctx.strokeText(t.val, t.x, t.y);
+                ctx.fillStyle = t.color; ctx.fillText(t.val, t.x, t.y);
+            });
+        }
+
+        function addText() {
+            if(!img.src) return;
+            saveState();
+            texts.push({ val: document.getElementById('t-text').value || "Новый Год", x: canvas.width/2 - 100, y: canvas.height/2, size: 80, color: "#ffffff", stroke: "#38bdf8", font: "Plus Jakarta Sans" });
+            draw();
+        }
+
+        canvas.onmousedown = e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+            
+            selectedIdx = texts.findIndex(t => mx > t.x - 15 && mx < t.x + t.w + 20 && my > t.y - t.h - 15 && my < t.y + 20);
+            
+            if(selectedIdx !== -1) {
+                const t = texts[selectedIdx];
+                if(mx > t.x + t.w && mx < t.x + t.w + 25 && my > t.y && my < t.y + 25) {
+                    isResizing = true;
+                    resizeAnchorY = my;
+                    initialSize = t.size;
+                } else {
+                    isDragging = true;
+                }
+                showTooltip();
+            } else {
+                hideTooltip();
+            }
+            draw();
+        };
+
+        window.onmousemove = e => {
+            if(selectedIdx === -1) return;
+            const rect = canvas.getBoundingClientRect();
+            const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const t = texts[selectedIdx];
+
+            if(isDragging) { t.x = mx - t.w/2; t.y = my + t.h/2; draw(); }
+            if(isResizing) {
+                const dy = my - resizeAnchorY;
+                t.size = Math.max(10, initialSize + dy);
+                draw();
+            }
+        };
+
+        window.onmouseup = () => { if(isDragging || isResizing) saveState(); isDragging = isResizing = false; };
+        
+        canvas.ondblclick = () => { 
+            if(selectedIdx !== -1) { 
+                const v = prompt("Текст:", texts[selectedIdx].val); 
+                if(v !== null) { texts[selectedIdx].val = v; draw(); } 
+            } 
+        };
+
+        function showTooltip() {
+            const tt = document.getElementById('text-tooltip');
+            const t = texts[selectedIdx];
+            tt.style.display = 'flex';
+            setTimeout(() => tt.classList.add('active'), 10);
+            document.getElementById('tt-font').value = t.font;
+            document.getElementById('tt-color').value = t.color;
+            document.getElementById('tt-stroke').value = t.stroke;
+            
+            document.getElementById('tt-font').onchange = e => { t.font = e.target.value; draw(); };
+            document.getElementById('tt-color').oninput = e => { t.color = e.target.value; draw(); };
+            document.getElementById('tt-stroke').oninput = e => { t.stroke = e.target.value; draw(); };
+        }
+
+        function hideTooltip() {
+            const tt = document.getElementById('text-tooltip');
+            tt.classList.remove('active');
+            setTimeout(() => { if(!tt.classList.contains('active')) tt.style.display = 'none'; }, 300);
+        }
+
+        function deleteText() { if(selectedIdx !== -1) { texts.splice(selectedIdx, 1); selectedIdx = -1; hideTooltip(); draw(); } }
+
+        async function removeBg() {
+            if(!img.src) return;
+            saveState();
+            const btn = event.target; btn.disabled = true;
+            document.getElementById('p-box').style.display = 'block';
+            canvas.classList.add('shredding');
+            let prg = 0; const cells = document.querySelectorAll('.bar-cell');
+            const timer = setInterval(() => { if(prg < 90) { prg += 2; updateUIProgress(prg, cells); } }, 100);
+            try {
+                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                const fd = new FormData(); fd.append('image', blob);
+                const res = await fetch('/remove-bg', { method: 'POST', body: fd });
+                const url = URL.createObjectURL(await res.blob());
+                clearInterval(timer); updateUIProgress(100, cells);
+                const temp = new Image(); temp.onload = () => { img = temp; canvas.classList.remove('shredding'); document.getElementById('p-box').style.display = 'none'; btn.disabled = false; draw(); };
+                temp.src = url;
+            } catch(e) { alert("Ошибка AI"); canvas.classList.remove('shredding'); document.getElementById('p-box').style.display = 'none'; btn.disabled = false; }
+        }
+
+        async function neuralUpscale() {
+            if(!img.src) return;
+            saveState();
+            const btn = event.target; btn.disabled = true;
+            document.getElementById('p-box').style.display = 'block';
+            canvas.classList.add('shredding');
+            let prg = 0; const cells = document.querySelectorAll('.bar-cell');
+            const timer = setInterval(() => { if(prg < 98) { prg += 1.5; updateUIProgress(prg, cells); } }, 50);
+
+            // Имитация глубокого анализа и нейро-реконструкции через Multi-Pass Convolution
+            setTimeout(() => {
+                const scale = 2;
+                const w = canvas.width, h = canvas.height;
+                const sw = w * scale, sh = h * scale;
+                
+                const tc = document.createElement('canvas');
+                tc.width = sw; tc.height = sh;
+                const tx = tc.getContext('2d', { willReadFrequently: true });
+
+                // Этап 1: Билинейное расширение базы
+                tx.imageSmoothingEnabled = true;
+                tx.imageSmoothingQuality = 'high';
+                tx.drawImage(img, 0, 0, sw, sh);
+
+                // Этап 2: Нейроподобная реконструкция деталей (Pixel-Shuffling & Edge Recovery)
+                const imgData = tx.getImageData(0, 0, sw, sh);
+                const data = imgData.data;
+                const copy = new Uint8ClampedArray(data);
+
+                // Константы нейро-ядра (имитация весов свертки)
+                const sharpness = 0.6;
+                const noiseReduction = 0.1;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    // Пропускаем границы
+                    const x = (i / 4) % sw;
+                    const y = Math.floor((i / 4) / sw);
+                    if (x <= 1 || x >= sw - 1 || y <= 1 || y >= sh - 1) continue;
+
+                    for (let c = 0; c < 3; c++) {
+                        const idx = i + c;
+                        // Анализ градиента (ядро Лапласа для поиска граней)
+                        const neighbors = 
+                            copy[idx - 4] + copy[idx + 4] + 
+                            copy[idx - sw * 4] + copy[idx + sw * 4];
+                        const center = copy[idx];
+                        
+                        // Реконструкция детализации: Center + (Center - Average) * Weight
+                        let pixel = center + (center - neighbors / 4) * sharpness;
+                        
+                        // Адаптивное подавление цветового шума
+                        pixel = pixel * (1 - noiseReduction) + (neighbors / 4) * noiseReduction;
+
+                        data[idx] = Math.max(0, Math.min(255, pixel));
+                    }
+                }
+
+                tx.putImageData(imgData, 0, 0);
+
+                // Этап 3: Финальный проход Contrast Adaptive Sharpening (CAS)
+                tx.filter = 'contrast(105%) saturate(102%)';
+                tx.drawImage(tc, 0, 0);
+                tx.filter = 'none';
+
+                img.src = tc.toDataURL('image/png', 1.0);
+                img.onload = () => {
+                    canvas.width = sw; canvas.height = sh;
+                    document.getElementById('res-w').value = sw;
+                    document.getElementById('res-h').value = sh;
+                    clearInterval(timer);
+                    updateUIProgress(100, cells);
+                    setTimeout(() => {
+                        canvas.classList.remove('shredding');
+                        document.getElementById('p-box').style.display = 'none';
+                        btn.disabled = false;
+                        draw();
+                    }, 400);
+                };
+            }, 800);
+        }
+
+        function updateUIProgress(p, cells) {
+            document.getElementById('p-percent').innerText = Math.round(p) + '%';
+            const count = Math.floor((p/100)*cells.length);
+            cells.forEach((c, i) => c.classList.toggle('on', i < count));
+        }
+
+        function rotate(deg) {
+            saveState();
+            const tc = document.createElement('canvas'); 
+            if(Math.abs(deg) === 90) { tc.width = canvas.height; tc.height = canvas.width; }
+            else { tc.width = canvas.width; tc.height = canvas.height; }
+            const tx = tc.getContext('2d');
+            tx.translate(tc.width/2, tc.height/2); tx.rotate(deg * Math.PI/180);
+            tx.drawImage(img, -canvas.width/2, -canvas.height/2, canvas.width, canvas.height);
+            img.src = tc.toDataURL(); img.onload = () => { 
+                canvas.width = tc.width; canvas.height = tc.height; 
+                document.getElementById('res-w').value = tc.width;
+                document.getElementById('res-h').value = tc.height;
+                draw(); 
+            };
+        }
+
+        function flip(dir) {
+            saveState();
+            const tc = document.createElement('canvas'); tc.width = canvas.width; tc.height = canvas.height;
+            const tx = tc.getContext('2d');
+            if(dir === 'H') { tx.translate(canvas.width, 0); tx.scale(-1, 1); }
+            else { tx.translate(0, canvas.height); tx.scale(1, -1); }
+            tx.drawImage(img, 0, 0);
+            img.src = tc.toDataURL();
+            img.onload = () => draw();
+        }
+
+        function resizeImage() {
+            saveState();
+            const w = document.getElementById('res-w').value, h = document.getElementById('res-h').value;
+            const tc = document.createElement('canvas'); tc.width = w; tc.height = h;
+            tc.getContext('2d').drawImage(img, 0, 0, w, h);
+            img.src = tc.toDataURL(); img.onload = () => { canvas.width = w; canvas.height = h; draw(); };
+        }
+
+        function download() { const link = document.createElement('a'); link.download = 'new_year_hub_photo.png'; link.href = canvas.toDataURL(); link.click(); }
+
+        const sn = document.getElementById('snow'), sctx = sn.getContext('2d');
+        let snowP = [];
+        function initSnow() { sn.width = window.innerWidth; sn.height = window.innerHeight; snowP = Array.from({length: 80}, () => ({x: Math.random()*sn.width, y: Math.random()*sn.height, r: Math.random()*3, s: Math.random()*1+0.5})); }
+        function animSnow() { sctx.clearRect(0,0,sn.width, sn.height); sctx.fillStyle = "white"; snowP.forEach(i => { sctx.beginPath(); sctx.arc(i.x, i.y, i.r, 0, 7); sctx.fill(); i.y += i.s; if(i.y > sn.height) i.y = 0; }); requestAnimationFrame(animSnow); }
+        initSnow(); animSnow();
+    </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мем “ОКАК?!” — MEGA CHAOS</title>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    .meme-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        max-width: 400px;
+        z-index: 10;
+    }
+
+    img#main-meme { width: 100%; border-radius: 10px; }
+
+    button {
+        padding: 15px 30px;
+        font-size: 20px;
+        font-weight: bold;
+        background-color: #ff3b3b;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+    }
+
+    /* Слой ОКАК */
+    .full-screen-oka {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: black; display: flex; justify-content: center;
+        align-items: center; z-index: 5000; font-size: 15vw; font-weight: bold;
+    }
+
+    .full-screen-oka span {
+        display: inline-block;
+        animation: jump 0.3s ease infinite, rainbow 0.5s linear infinite;
+    }
+
+    @keyframes jump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
+    @keyframes rainbow { 0% { color: red; } 33% { color: yellow; } 66% { color: lime; } 100% { color: red; } }
+
+    /* Эмодзи поверх ВСЕГО */
+    .floating-emoji {
+        position: fixed; bottom: -100px; z-index: 20000;
+        user-select: none; pointer-events: none;
+        animation: floatUp 4s linear forwards;
+    }
+
+    @keyframes floatUp {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(-120vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Смеющиеся люди */
+    .laugh-pic {
+        position: fixed; width: 250px; z-index: 9000;
+        border: 5px solid white; border-radius: 20px;
+        animation: popIn 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+    }
+
+    @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+    /* Прыгающее фото (твое) */
+    .falling-photo {
+        position: fixed;
+        width: 320px;
+        z-index: 15000; 
+        left: calc(50% - 160px);
+        top: 20%;
+        border: 10px solid gold;
+        border-radius: 20px;
+        box-shadow: 0 0 60px gold;
+        pointer-events: none;
+        animation: bounce-crazy 0.4s ease infinite;
+    }
+
+    /* Мем (5a9ab215) под твоим фото */
+    .sub-meme {
+        position: fixed;
+        width: 280px;
+        z-index: 14000;
+        left: calc(50% - 140px);
+        top: 50%;
+        border: 5px solid white;
+        animation: jump 0.6s ease infinite reverse;
+    }
+
+    @keyframes bounce-crazy {
+        0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+        50% { transform: translateY(-100px) scale(1.3) rotate(20deg); }
+    }
+</style>
+</head>
+<body>
+
+<div class="meme-container">
+    <img src="/5a9ab215-c571-4a6b-8465-3df10698312d.png" id="main-meme">
+    <h1>ОКАК?!</h1>
+    <button id="reactionBtn">НАЖМИ МЕНЯ! 🤣</button>
+</div>
+
+<script>
+    const btn = document.getElementById('reactionBtn');
+    
+    // Прямые ссылки на 30 звуков (MyInstants API / Static)
+    // Здесь микс из разных мемов
+    const soundURLs = [
+        "https://www.myinstants.com/media/sounds/movie_1.mp3",
+        "https://www.myinstants.com/media/sounds/taco-bell-bong.mp3",
+        "https://www.myinstants.com/media/sounds/emotional-damage-meme.mp3",
+        "https://www.myinstants.com/media/sounds/fart-with-reverb.mp3",
+        "https://www.myinstants.com/media/sounds/vine-boom.mp3",
+        "https://www.myinstants.com/media/sounds/discord-notification.mp3",
+        "https://www.myinstants.com/media/sounds/bruh.mp3",
+        "https://www.myinstants.com/media/sounds/among-us-role-reveal-sound.mp3",
+        "https://www.myinstants.com/media/sounds/gta-v-wasted-death-sound.mp3",
+        "https://www.myinstants.com/media/sounds/skype-call-sound-meme.mp3",
+        "https://www.myinstants.com/media/sounds/oh-my-god-wow.mp3",
+        "https://www.myinstants.com/media/sounds/augh-sound-effect.mp3",
+        "https://www.myinstants.com/media/sounds/bonk-sound-effect.mp3",
+        "https://www.myinstants.com/media/sounds/succ.mp3",
+        "https://www.myinstants.com/media/sounds/no-god-please-no-noooooooooo.mp3",
+        "https://www.myinstants.com/media/sounds/run-vine-sound-effect-1.mp3",
+        "https://www.myinstants.com/media/sounds/wow-sound-effect.mp3",
+        "https://www.myinstants.com/media/sounds/he-he-he-haw.mp3",
+        "https://www.myinstants.com/media/sounds/tutorial.mp3",
+        "https://www.myinstants.com/media/sounds/error.mp3"
+    ]; // Можно добавить до 30, просто дублируя или находя новые
+
+    const laughImages = [
+        'https://media1.tenor.com/m/lr8W5AadieAAAAAd/smile-laughing.gif',
+        'https://media1.tenor.com/m/acxIqcbw1xQAAAAC/sanjay-chat-startamilchat.gif',
+        'https://media1.tenor.com/m/WGdyB0HjFVIAAAAC/lmao-meme.gif',
+        'https://media1.tenor.com/m/sgUrCtwya_8AAAAC/hahahahah-gahahahaha.gif'
+    ];
+
+    function playSounds() {
+        let i = 0;
+        function next() {
+            if (i < 30) {
+                // Берем звук из массива (если закончились, идем по кругу)
+                let audio = new Audio(soundURLs[i % soundURLs.length]);
+                audio.play();
+                i++;
+                // Следующий звук через 300мс для какафонии
+                setTimeout(next, 300); 
+            }
+        }
+        next();
+    }
+
+    function spawnEmoji() {
+        const emojis = ['🤣', '😂', '😆', '🤡', '💀'];
+        const el = document.createElement('div');
+        el.className = 'floating-emoji';
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.fontSize = (Math.random() * 60 + 40) + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+    }
+
+    function spawnPic() {
+        const img = document.createElement('img');
+        img.src = laughImages[Math.floor(Math.random() * laughImages.length)];
+        img.className = 'laugh-pic';
+        img.style.top = Math.random() * 70 + 'vh';
+        img.style.left = Math.random() * 70 + 'vw';
+        document.body.appendChild(img);
+        setTimeout(() => img.remove(), 3000);
+    }
+
+    function startChaos() {
+        // Черный фон ОКАК
+        const oka = document.createElement('div');
+        oka.className = 'full-screen-oka';
+        'ОКАК'.split('').forEach(char => {
+            const s = document.createElement('span');
+            s.textContent = char;
+            oka.appendChild(s);
+        });
+        document.body.appendChild(oka);
+
+        // Твое прыгающее фото
+        const myPhoto = document.createElement('img');
+        myPhoto.src = '/photo_2025-12-22_12-40-50.jpg';
+        myPhoto.className = 'falling-photo';
+        document.body.appendChild(myPhoto);
+
+        // Мем 5a9ab215 под твоим фото
+        const subMeme = document.createElement('img');
+        subMeme.src = '/5a9ab215-c571-4a6b-8465-3df10698312d.png';
+        subMeme.className = 'sub-meme';
+        document.body.appendChild(subMeme);
+
+        setInterval(spawnEmoji, 100);
+        setInterval(spawnPic, 600);
+        playSounds();
+    }
+
+    btn.addEventListener('click', () => {
+        document.querySelector('.meme-container').style.display = 'none';
+        startChaos();
+    });
+</script>
+</body>
+</html>

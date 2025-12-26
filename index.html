@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Premium Winter Portfolio — Цымбал Данил</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+    :root {
+      --bg: #020617; 
+      --card-bg: rgba(15, 23, 42, 0.9); /* Сделал чуть плотнее для читаемости */
+      --accent: #38bdf8; 
+      --accent-glow: rgba(56, 189, 248, 0.4);
+      --text-main: #ffffff; /* Максимально белый для текста */
+      --text-muted: #cbd5e1; /* Светло-серый вместо темного */
+      --glass-border: rgba(255, 255, 255, 0.15);
+    }
+    
+    * { box-sizing: border-box; cursor: none !important; font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    body { 
+      margin: 0; 
+      min-height: 100vh; 
+      background: var(--bg); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 40px 20px; 
+      /* ИСПРАВЛЕНИЕ: разрешаем прокрутку */
+      overflow-y: auto; 
+      background: radial-gradient(circle at top, #1e293b, #020617) fixed; 
+    }
+    
+    /* Гирлянды */
+    .lights { position: fixed; top: -15px; left: 0; width: 100%; height: 50px; display: flex; justify-content: space-around; z-index: 100; pointer-events: none; }
+    .light { width: 12px; height: 18px; border-radius: 50%; animation: glow 1.5s infinite alternate; box-shadow: 0 0 10px currentColor; }
+    .light:nth-child(odd) { color: #ff4d4d; animation-delay: 0.5s; }
+    .light:nth-child(even) { color: #fbbf24; animation-delay: 1s; }
+    .light:nth-child(3n) { color: #38bdf8; animation-delay: 1.5s; }
+    @keyframes glow { from { opacity: 0.4; } to { opacity: 1; } }
+
+    .tree { position: fixed; bottom: 20px; right: 20px; font-size: 80px; z-index: 5; opacity: 0.6; user-select: none; z-index: 1000000;}
+    #snow { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+    /* КУРСОР */
+    #cursor-dot { width: 6px; height: 6px; background: white; position: fixed; pointer-events: none; z-index: 10000; border-radius: 50%; transform: translate(-50%, -50%); }
+    #cursor-outline { width: 30px; height: 30px; border: 1px solid var(--accent); position: fixed; pointer-events: none; z-index: 9999; border-radius: 50%; transition: transform 0.1s; }
+
+    /* КАРТОЧКА */
+    .card { 
+      max-width: 1000px; 
+      width: 100%; 
+      background: var(--card-bg); 
+      backdrop-filter: blur(30px); 
+      border: 1px solid var(--glass-border); 
+      border-radius: 32px; 
+      position: relative; 
+      z-index: 10; 
+      box-shadow: 0 40px 100px rgba(0,0,0,0.8); 
+      margin-bottom: 40px;
+    }
+
+    header { padding: 40px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; gap: 20px; }
+    .title h1 { margin: 0; font-size: 34px; font-weight: 800; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    .title p { color: var(--accent); margin: 5px 0 0; font-weight: 600; }
+    
+    .status-badge { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--accent); padding: 10px 20px; border-radius: 100px; font-size: 13px; font-weight: 600; color: white; display: flex; align-items: center; gap: 8px; }
+
+    .content { padding: 40px 50px; display: grid; grid-template-columns: 280px 1fr; gap: 60px; }
+    
+    .avatar-wrapper { cursor: pointer; position: relative; width: 100%; aspect-ratio: 1; border-radius: 28px; padding: 4px; background: linear-gradient(45deg, var(--glass-border), var(--accent)); transition: 0.4s; }
+    .avatar-wrapper:hover { transform: scale(1.02); box-shadow: 0 0 30px var(--accent-glow); }
+    .avatar-box { width: 100%; height: 100%; border-radius: 24px; background: #0f172a center/cover; }
+
+    .btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 14px; border-radius: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
+    .btn:hover { background: white; color: black; }
+    .btn-primary { background: var(--accent); color: #000; border: none; }
+
+    /* Исправление видимости текста в секциях */
+    .section-box { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 25px; border-radius: 24px; margin-bottom: 25px; }
+    .section-box h3 { margin: 0 0 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); font-weight: 800; }
+    .section-box p, .section-box div { color: var(--text-main); line-height: 1.6; }
+
+    .tag { background: rgba(56, 189, 248, 0.2); color: white; padding: 6px 14px; border-radius: 10px; font-size: 12px; margin: 0 8px 8px 0; display: inline-block; border: 1px solid var(--accent); }
+
+    /* Модалки */
+    .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); z-index: 1000; overflow-y: auto; padding: 20px; }
+    .modal-box { max-width: 550px; width: 100%; margin: 40px auto; background: #0f172a; border: 1px solid var(--accent); padding: 40px; border-radius: 32px; color: white; }
+    
+    label { display: block; margin-bottom: 8px; font-size: 12px; color: var(--accent); font-weight: 800; }
+    input, textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; color: white; border-radius: 14px; margin-bottom: 20px; outline: none; }
+    
+    footer { padding: 30px 50px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; }
+
+    @media (max-width: 850px) {
+      .content { grid-template-columns: 1fr; padding: 30px; }
+      header { padding: 30px; }
+    }
+    .ilya:hover { font-size: 15px; color: #ff3b3b; cursor: pointer; transition: 0.3s; }
+  </style>
+</head>
+<body>
+<button id="shutdown-btn" style="position:fixed;top:10px;right:10px;padding:10px 20px;background:red;color:white;border:none;border-radius:5px;cursor:pointer;">
+    Выключить сервер
+</button>
+<div class="lights">
+    <script>for(let i=0; i<20; i++) document.write('<div class="light"></div>');</script>
+</div>
+<div class="tree" onclick="location.href='/practice/menu'">🎄</div>
+<canvas id="snow"></canvas>
+<div id="cursor-dot"></div>
+<div id="cursor-outline"></div>
+
+<div class="card">
+  <header>
+    <div class="title">
+      <h1 id="ui-name">ЗАГРУЗКА...</h1>
+      <p id="ui-group"></p>
+    </div>
+    <div class="status-badge" id="statusBadge">❄️ Ждем...</div>
+  </header>
+
+  <div class="content">
+    <aside>
+      <div class="avatar-wrapper" onclick="openHistory()" title="История аватарок">
+        <div class="avatar-box" id="avatar-img"></div>
+      </div>
+      <button class="btn" style="background: linear-gradient(45deg, #ef4444, #b91c1c); border: none; margin-top: 10px;" onclick="location.href='/game/grinch'">
+    🎮 NEW YEAR GAME
+</button>
+      <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('fileInp').click()">Новое фото</button>
+      <input type="file" id="fileInp" hidden accept="image/*">
+      <button class="btn" onclick="openEdit()">Изменить профиль</button>
+      
+      <div style="margin-top: 30px; font-size: 14px;">
+        <div style="margin-bottom: 10px;"><span style="color:var(--accent)">Год:</span> <span id="ui-birth" style="color:white"></span></div>
+        <div style="margin-bottom: 10px;"><span style="color:var(--accent)">Кожа:</span> <span id="ui-skin" style="color:white"></span></div>
+        <div style="margin-bottom: 10px;"><span style="color:var(--accent)">Ориентация:</span> <span id="ui-orientation" style="color:white"></span></div>
+        <div style="margin-top: 20px; color:var(--accent); font-weight: 800; font-size: 11px;">КОНТАКТЫ</div>
+        <div id="ui-contacts" style="color:white; word-break: break-all;"></div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="section-box">
+        <h3>О себе</h3>
+        <p id="ui-about" style="font-size: 16px;"></p>
+      </div>
+      <div class="section-box">
+        <h3>Навыки</h3>
+        <div id="ui-skills"></div>
+      </div>
+      <div class="section-box">
+        <h3>Мои проекты</h3>
+        <div id="ui-projects"></div>
+      </div>
+      <button class="btn" style="border: 2px solid var(--accent); color: var(--accent)" onclick="openStatus()">Обновить статус</button>
+    </main>
+  </div>
+  <footer>
+    <span>© <span id="curYear"></span> · Created by Tsymbal Danil and <p class="ilya" onclick="location.href='/game/ilya'">Tsiprisnki Ilya</p></span>
+    <span style="letter-spacing: 2px; color: var(--accent)">WINTER PORTFOLIO</span>
+  </footer>
+</div>
+
+<div class="modal-overlay" id="modalHistory">
+    <div class="modal-box">
+        <h2 style="margin-top:0">Архив аватаров</h2>
+        <div class="history-grid" id="historyGrid"></div>
+        <button class="btn" style="margin-top:30px" onclick="closeModals()">Закрыть</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalEdit">
+    <div class="modal-box">
+        <h2 style="margin-top:0">Редактор</h2>
+        <label>ФИО</label><input type="text" id="in-name">
+        <label>О себе</label><textarea id="in-about" rows="3"></textarea>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div><label>Год</label><input type="text" id="in-birth"></div>
+            <div><label>Кожа</label><input type="text" id="in-skin"></div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div><label>Ориентация</label><input type="text" id="in-orientation"></div>
+            <div><label>Группа</label><input type="text" id="in-group"></div>
+        </div>
+        <label>Навыки (через запятую)</label><input type="text" id="in-skills">
+        <label>Проекты (через запятую)</label><input type="text" id="in-projects">
+        <label>Контакты</label><input type="text" id="in-contacts">
+        <button class="btn btn-primary" onclick="saveProfile()">Сохранить данные</button>
+        <button class="btn" style="margin-top:10px" onclick="closeModals()">Отмена</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalStatus">
+    <div class="modal-box">
+        <h2 style="margin-top:0">Ваш статус</h2>
+        <div style="display:flex; gap:10px; margin-bottom:25px;">
+            <input type="text" id="st-emoji" style="width:70px; text-align:center; font-size: 20px;">
+            <input type="text" id="st-text" placeholder="Чем заняты?">
+        </div>
+        <div style="display:grid; gap:10px;">
+            <div class="btn" style="text-align:left; margin:0;" onclick="setSt('🎄','Счастливого Нового Года!')">🎄 Праздную</div>
+            <div class="btn" style="text-align:left; margin:0;" onclick="setSt('💻','В процессе кодинга')">💻 Кодинг</div>
+            <div class="btn" style="text-align:left; margin:0;" onclick="setSt('💤','Ушел отдыхать')">💤 Сон</div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:25px" onclick="saveStatus()">Установить</button>
+    </div>
+</div>
+
+<script>
+    // СКРИПТЫ (Тот же функционал)
+    const canvas = document.getElementById('snow'), ctx = canvas.getContext('2d');
+    let flakes = [];
+    function initSnow() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; flakes = Array(130).fill().map(() => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2+0.5, d: Math.random()*0.4+0.1 })); }
+    function drawSnow() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = "rgba(255, 255, 255, 0.6)"; ctx.beginPath(); flakes.forEach(f => { ctx.moveTo(f.x, f.y); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); f.y += f.d; if(f.y > canvas.height) f.y = -10; }); ctx.fill(); requestAnimationFrame(drawSnow); }
+    window.onresize = initSnow; initSnow(); drawSnow();
+
+    const dot = document.getElementById('cursor-dot'), outline = document.getElementById('cursor-outline');
+    window.onmousemove = e => { 
+        dot.style.left = e.clientX+'px'; 
+        dot.style.top = e.clientY+'px'; 
+        // Исправлено: вычитаем половину размера очертания (15px от 30px), чтобы оно было центрировано
+        outline.animate({
+            left: (e.clientX - 15) + 'px', 
+            top: (e.clientY - 15) + 'px'
+        }, {duration:400, fill:'forwards'}); 
+    };
+
+    async function load() {
+        const p = await (await fetch('/get-profile')).json();
+        const s = await (await fetch('/get-status')).json();
+        const a = await (await fetch('/latest-avatar')).json();
+        document.getElementById('ui-name').innerText = p.name;
+        document.getElementById('ui-group').innerText = p.group;
+        document.getElementById('ui-birth').innerText = p.birth;
+        document.getElementById('ui-skin').innerText = p.skin;
+        document.getElementById('ui-orientation').innerText = p.orientation;
+        document.getElementById('ui-about').innerText = p.about;
+        document.getElementById('ui-contacts').innerText = p.contacts;
+        document.getElementById('curYear').innerText = new Date().getFullYear();
+        
+        const sk = document.getElementById('ui-skills'); sk.innerHTML = '';
+        p.skills.split(',').forEach(x => sk.innerHTML += `<span class="tag">${x.trim()}</span>`);
+        const pr = document.getElementById('ui-projects'); pr.innerHTML = '';
+        p.projects.split(',').forEach(x => pr.innerHTML += `<div style="margin-bottom:5px">• ${x.trim()}</div>`);
+        
+        document.getElementById('statusBadge').innerHTML = `<span>${s.emoji}</span> ${s.text}`;
+        if(a.path) document.getElementById('avatar-img').style.backgroundImage = `url('${a.path}')`;
+        
+        document.getElementById('in-name').value = p.name;
+        document.getElementById('in-about').value = p.about;
+        document.getElementById('in-birth').value = p.birth;
+        document.getElementById('in-skin').value = p.skin;
+        document.getElementById('in-orientation').value = p.orientation;
+        document.getElementById('in-group').value = p.group;
+        document.getElementById('in-skills').value = p.skills;
+        document.getElementById('in-projects').value = p.projects;
+        document.getElementById('in-contacts').value = p.contacts;
+    }
+
+    async function openHistory() {
+        const r = await fetch('/avatars-list');
+        const d = await r.json();
+        const grid = document.getElementById('historyGrid');
+        grid.innerHTML = '';
+        d.avatars.forEach(url => {
+            const div = document.createElement('div');
+            div.style.cssText = `aspect-ratio:1; border-radius:14px; background-image:url('${url}'); background-size:cover; cursor:pointer; border:2px solid transparent; transition:0.3s;`;
+            div.onclick = () => { document.getElementById('avatar-img').style.backgroundImage = `url('${url}')`; closeModals(); };
+            div.onmouseover = () => div.style.borderColor = 'var(--accent)';
+            div.onmouseout = () => div.style.borderColor = 'transparent';
+            grid.appendChild(div);
+        });
+        document.getElementById('modalHistory').style.display = 'block';
+    }
+
+    function openEdit() { document.getElementById('modalEdit').style.display='block'; }
+    function openStatus() { document.getElementById('modalStatus').style.display='block'; }
+    function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
+
+    async function saveProfile() {
+        const data = {
+            name: document.getElementById('in-name').value, about: document.getElementById('in-about').value,
+            birth: document.getElementById('in-birth').value, skin: document.getElementById('in-skin').value,
+            orientation: document.getElementById('in-orientation').value, group: document.getElementById('in-group').value,
+            skills: document.getElementById('in-skills').value, projects: document.getElementById('in-projects').value,
+            contacts: document.getElementById('in-contacts').value, field: "ИТ", form: "Очная", interests: "Design"
+        };
+        await fetch('/set-profile', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+        load(); closeModals();
+    }
+    function setSt(e, t) { document.getElementById('st-emoji').value = e; document.getElementById('st-text').value = t; }
+    async function saveStatus() {
+        const data = { emoji: document.getElementById('st-emoji').value, text: document.getElementById('st-text').value };
+        await fetch('/set-status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+        load(); closeModals();
+    }
+    document.getElementById('fileInp').onchange = async e => {
+        const fd = new FormData(); fd.append('avatar', e.target.files[0]);
+        await fetch('/upload', { method:'POST', body:fd }); load();
+    };
+
+
+  document.getElementById('shutdown-btn').addEventListener('click', function() {
+      if(confirm("Вы действительно хотите остановить сервер?")) {
+          fetch('/shutdown', { method: 'POST' })
+              .then(response => response.text())
+              .then(msg => {
+                  alert(msg || "Сервер остановлен");
+              })
+              .catch(err => {
+                  alert("Не удалось остановить сервер: " + err);
+              });
+      }
+  });
+
+  async function terminateApp() {
+    try {
+        // 1. Отправляем запрос на сервер
+        const response = await fetch('/shutdown', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            // 2. Пытаемся закрыть вкладку
+            // Хак: сначала открываем self, чтобы разрешить закрытие
+            window.open('', '_self'); 
+            window.close();
+
+            // 3. Если браузер все же заблокировал close(), выводим сообщение
+            document.body.innerHTML = `
+                <div style="background: #1a1a1a; color: white; height: 100vh; display: flex; 
+                            flex-direction: column; justify-content: center; align-items: center; 
+                            font-family: Arial, sans-serif;">
+                    <h1 style="color: #ff4d4d;">Программа остановлена</h1>
+                    <p>Теперь вы можете закрыть это окно браузера.</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Ошибка при выключении:', error);
+    }
+}
+async function shutdownApp() {
+    try {
+        const response = await fetch('/shutdown', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            // 1. Сначала пробуем закрыть окно программно
+            window.open('', '_self'); 
+            window.close();
+
+            // 2. Если браузер заблокировал close(), меняем содержимое страницы,
+            // чтобы пользователь понял: сервер уже выключен.
+            document.body.innerHTML = `
+                <div style="background:#121212; color:white; height:100vh; display:flex; 
+                            align-items:center; justify-content:center; font-family:sans-serif;">
+                    <div style="text-align:center;">
+                        <h1 style="color:#ff4d4d;">Сервер остановлен</h1>
+                        <p>Вы можете закрыть эту вкладку вручную.</p>
+                    </div>
+                </div>`;
+        }
+    } catch (e) {
+        console.log("Сервер уже отключен или недоступен");
+    }
+}
+    window.onload = load;
+</script>
+
+</body>
+</html>

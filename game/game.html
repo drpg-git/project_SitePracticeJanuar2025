@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grinch Revenge — Ultimate V-Mode</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+
+        :root {
+            --bg: #020617;
+            --accent: #38bdf8;
+            --grinch: #4ade80;
+            --danger: #ef4444;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        * { box-sizing: border-box; cursor: none !important; }
+        body {
+            margin: 0; background: var(--bg); color: white;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden; display: flex; align-items: center;
+            justify-content: center; height: 100vh;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            text-decoration: none;
+            color: white;
+            background: var(--card-bg);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            font-weight: 600;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateX(5px);
+        }
+
+        canvas { 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            border-radius: 24px; border: 2px solid var(--glass-border); 
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        .side-menu {
+            position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+            background: var(--card-bg); border: 2px solid var(--accent);
+            border-left: none; border-radius: 0 24px 24px 0; padding: 25px 15px;
+            display: flex; flex-direction: column; gap: 15px; z-index: 1100; /* Поднято выше Game Over */
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+        }
+        .side-menu-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); font-weight: 800; text-align: center; }
+        .menu-item {
+            color: white; text-decoration: none; font-size: 13px; font-weight: 700;
+            padding: 12px 20px; border-radius: 12px; background: rgba(255,255,255,0.03);
+            transition: 0.3s; text-align: center; border: 1px solid var(--glass-border);
+        }
+        .menu-item:hover, .menu-item.active { background: var(--accent); color: #000; transform: translateX(10px); }
+
+        .game-ui {
+            position: absolute; top: 30px; display: flex; gap: 40px;
+            background: var(--card-bg); padding: 15px 40px; border-radius: 100px;
+            border: 1px solid var(--glass-border); backdrop-filter: blur(10px); z-index: 10;
+        }
+        .stat-item { text-align: center; }
+        .stat-label { font-size: 10px; text-transform: uppercase; color: var(--accent); font-weight: 800; }
+        .stat-value { font-size: 24px; font-weight: 800; text-shadow: 0 0 10px var(--accent); }
+
+        #boost-notify { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+        .boost-card {
+            background: var(--card-bg); border: 1px solid var(--accent); padding: 10px 20px;
+            border-radius: 15px; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        #easter-egg-msg {
+            position: absolute; font-size: 80px; font-weight: 900; color: #fff;
+            text-shadow: 0 0 30px #ff00ff, 0 0 60px #00ffff; display: none;
+            z-index: 1000; pointer-events: none; text-align: center; width: 100%;
+        }
+
+        .game-over {
+            position: absolute; inset: 0; background: rgba(2,6,23,0.95);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+        }
+        
+        /* Слой для паузы */
+        #pauseMenu { background: rgba(2,6,23,0.8); backdrop-filter: blur(5px); }
+
+        .btn-restart { background: var(--accent); color: #000; border: none; padding: 15px 40px; border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        .btn-restart:hover { transform: scale(1.05); }
+
+        #cursor { width: 8px; height: 8px; background: white; border-radius: 50%; position: fixed; pointer-events: none; z-index: 10000; transform: translate(-50%, -50%); box-shadow: 0 0 15px white; }
+        
+        .rainbow-text { animation: rainbow 2s linear infinite; }
+        @keyframes rainbow {
+            0% { color: #ff0000; } 20% { color: #ffff00; } 40% { color: #00ff00; } 60% { color: #00ffff; } 80% { color: #0000ff; } 100% { color: #ff00ff; }
+        }
+    </style>
+</head>
+<body>
+<a href="/portfolio" class="back-link">
+    <span>←</span> Назад в портфолио
+</a>
+<div id="cursor"></div>
+<div id="easter-egg-msg">ПАСХАЛКА НАЙДЕНА</div>
+
+<nav class="side-menu">
+    <div class="side-menu-title">New Year Hub</div>
+    <a href="/game/grinch" class="menu-item active">🐲 ЗМЕЙКА</a>
+    <a href="/game/puzzles" class="menu-item">🧩 ПАЗЛЫ</a>
+    <a href="/game/ratatype" class="menu-item">⌨️ ТРЕНАЖЕР</a>
+    <a href="/game/gd" class="menu-item">🟦 GEODASH</a>
+    <a href="/game/photo" class="menu-item">📸 PHOTOEDITOR</a>
+    <a href="/game/dino" class="menu-item">🦖 ДИНОЗАВРИК</a>
+    <a href="/game/clicker" class="menu-item">💎 КЛИКЕР</a>
+</nav>
+
+<div class="game-ui">
+    <div class="stat-item"><div class="stat-label">Счет</div><div class="stat-value" id="score">0</div></div>
+    <div class="stat-item"><div class="stat-label">Комбо</div><div class="stat-value" id="combo">x1.0</div></div>
+    <div class="stat-item"><div class="stat-label">Рекорд</div><div class="stat-value" id="best">0</div></div>
+</div>
+
+<div id="boost-notify"></div>
+
+<div class="game-over" id="pauseMenu">
+    <h1 style="font-size: 64px; color: var(--accent); margin: 0; text-shadow: 0 0 20px var(--accent);">ПАУЗА</h1>
+    <p style="font-size: 18px; margin: 15px 0; opacity: 0.8;">Нажмите ПРОБЕЛ, чтобы вернуться</p>
+    <button class="btn-restart" onclick="togglePause()">ПРОДОЛЖИТЬ</button>
+</div>
+
+<div class="game-over" id="gameOver">
+    <h1 style="font-size: 64px; color: var(--danger); margin: 0; text-shadow: 0 0 20px var(--danger);">ПОЙМАН!</h1>
+    <p id="finalScore" style="font-size: 24px; margin: 15px 0;"></p>
+    <button class="btn-restart" onclick="resetGame()">РЕВАНШ</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const cursor = document.getElementById('cursor');
+    
+    canvas.width = 900; canvas.height = 600;
+
+    let score = 0, best = localStorage.getItem('grinchBest') || 0, combo = 1;
+    let gameActive = true, isPaused = false;
+    let santaFrozen = 0, ghostMode = 0, shieldActive = false, magnetMode = 0, frenzyTimer = 0;
+    let particles = [], isSlowingSanta = false;
+    let gifts = [];
+    let boosts = [];
+    let easterMode = false;
+    let easterStage2 = false;
+    let easterStageV = false;
+    let mousePath = [];
+    let santaAngle = 0;
+    let twerkFrame = 0;
+
+    const GRINCH_SPEED = 5.2;
+    const SANTA_BASE_SPEED = 2.2;
+    const MAGNET_RADIUS = 180;
+
+    let grinch = { x: 450, y: 300, targetX: 450, targetY: 300, history: [], tailLength: 10, speed: GRINCH_SPEED, frenzy: false, sizeScale: 1 };
+    let santa = { x: 50, y: 50 };
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x; this.y = y; this.color = color;
+            this.size = Math.random() * 3 + 2;
+            this.vX = (Math.random() - 0.5) * 6;
+            this.vY = (Math.random() - 0.5) * 6;
+            this.life = 1.0;
+        }
+        update() { this.x += this.vX; this.y += this.vY; this.life -= 0.03; }
+        draw() {
+            ctx.save(); ctx.globalAlpha = this.life; ctx.fillStyle = this.color;
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); ctx.restore();
+        }
+    }
+
+    function createExplosion(x, y, color) {
+        for(let i=0; i<12; i++) particles.push(new Particle(x, y, color));
+    }
+
+    document.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        grinch.targetX = mx; grinch.targetY = my;
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+
+        if (!isPaused && gameActive) {
+            mousePath.push({x: mx, y: my, time: Date.now()});
+            if(mousePath.length > 70) mousePath.shift();
+            
+            if (grinch.frenzy && !easterMode && !easterStage2 && !easterStageV) {
+                checkZGesture();
+            } else if (easterMode && !easterStage2 && !easterStageV) {
+                checkOGesture();
+            } else if (easterStage2 && !easterStageV) {
+                checkVGesture();
+            }
+        }
+    });
+
+    window.addEventListener('keydown', e => {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            togglePause();
+        }
+    });
+
+    function togglePause() {
+        if (!gameActive) return;
+        isPaused = !isPaused;
+        document.getElementById('pauseMenu').style.display = isPaused ? 'flex' : 'none';
+    }
+
+    function checkZGesture() {
+        if (mousePath.length < 25) return;
+        const start = mousePath[0];
+        const mid1 = mousePath[Math.floor(mousePath.length * 0.3)];
+        const mid2 = mousePath[Math.floor(mousePath.length * 0.7)];
+        const end = mousePath[mousePath.length - 1];
+        const h1 = mid1.x - start.x > 60 && Math.abs(mid1.y - start.y) < 60;
+        const diag = mid2.x < mid1.x - 50 && mid2.y > mid1.y + 50;
+        const h2 = end.x - mid2.x > 60 && Math.abs(end.y - mid2.y) < 60;
+        if (h1 && diag && h2) activateEasterEgg();
+    }
+
+    function checkOGesture() {
+        if (mousePath.length < 45) return;
+        let minX = 999, maxX = 0, minY = 999, maxY = 0;
+        mousePath.forEach(p => {
+            if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
+            if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y;
+        });
+        const width = maxX - minX;
+        const height = maxY - minY;
+        const startEndDist = Math.sqrt((mousePath[0].x - mousePath[mousePath.length-1].x)**2 + (mousePath[0].y - mousePath[mousePath.length-1].y)**2);
+        if (width > 90 && height > 90 && Math.abs(width - height) < 60 && startEndDist < 75) activateStage2();
+    }
+
+    function checkVGesture() {
+        if (mousePath.length < 30) return;
+        const start = mousePath[0];
+        const bottom = mousePath[Math.floor(mousePath.length * 0.5)];
+        const end = mousePath[mousePath.length - 1];
+        
+        const downLeft = bottom.x < start.x - 40 && bottom.y > start.y + 60;
+        const upRight = end.x > bottom.x + 40 && end.y < bottom.y - 60;
+        
+        if (downLeft && upRight) activateStageV();
+    }
+
+    function activateEasterEgg() {
+        easterMode = true;
+        const msg = document.getElementById('easter-egg-msg');
+        msg.innerText = "ПАСХАЛКА НАЙДЕНА";
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 3000);
+        for(let i=0; i<15; i++) spawnGift();
+        let eggInterval = setInterval(() => { 
+            if(easterMode && !easterStage2 && !easterStageV && !isPaused) { spawnGift(); spawnBoost(); } 
+            else if (!easterMode && !easterStage2 && !easterStageV) clearInterval(eggInterval);
+        }, 150);
+    }
+
+    function activateStage2() {
+        easterStage2 = true;
+        easterMode = false;
+        const msg = document.getElementById('easter-egg-msg');
+        msg.innerText = "РЕЖИМ ГИГАНТА";
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 3000);
+        grinch.sizeScale = 2; 
+        const corners = [{x: 80, y: 80}, {x: 820, y: 80}, {x: 80, y: 520}, {x: 820, y: 520}];
+        const selected = corners[Math.floor(Math.random()*corners.length)];
+        santa.x = selected.x; santa.y = selected.y;
+    }
+
+    function activateStageV() {
+        easterStageV = true;
+        easterStage2 = false;
+        const msg = document.getElementById('easter-egg-msg');
+        msg.innerText = "FURRY TWERK MODE";
+        msg.classList.add('rainbow-text');
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 4000);
+        santa.x = -1000; 
+    }
+
+    function spawnGift() { 
+        gifts.push({ x: 100 + Math.random()*700, y: 100 + Math.random()*400 }); 
+    }
+
+    function spawnBoost() {
+        if (!gameActive || isPaused) return;
+        const types = [
+            {icon: "⚡", label: "ЯРОСТЬ", color: "#38bdf8"}, {icon: "❄️", label: "ЗАМОРОЗКА", color: "#ffffff"}, 
+            {icon: "🧲", label: "МАГНИТ", color: "#ef4444"}, {icon: "🛡️", label: "ЩИТ", color: "#facc15"}, 
+            {icon: "👻", label: "ПРИЗРАК", color: "#a855f7"}
+        ];
+        const s = types[Math.floor(Math.random()*types.length)];
+        boosts.push({ x: 100 + Math.random()*700, y: 100 + Math.random()*400, active: true, ...s });
+    }
+
+    setInterval(() => { if(!easterMode && !easterStage2 && !easterStageV && !isPaused) spawnBoost(); }, 12000);
+
+    function update() {
+        if (!gameActive || isPaused) return;
+
+        const dx = grinch.targetX - grinch.x, dy = grinch.targetY - grinch.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const curSpeed = grinch.frenzy ? grinch.speed * 1.8 : grinch.speed;
+        if(dist > 2) { grinch.x += (dx/dist) * curSpeed; grinch.y += (dy/dist) * curSpeed; }
+        grinch.history.unshift({x: grinch.x, y: grinch.y});
+        if(grinch.history.length > grinch.tailLength * 5) grinch.history.pop();
+
+        gifts.forEach((g, index) => {
+            const gdx = grinch.x - g.x, gdy = grinch.y - g.y;
+            const gDist = Math.sqrt(gdx*gdx + gdy*gdy);
+            if(magnetMode > 0 && gDist < MAGNET_RADIUS * grinch.sizeScale) { g.x += (gdx/gDist)*9; g.y += (gdy/gDist)*9; }
+            if(gDist < 38 * grinch.sizeScale) {
+                createExplosion(g.x, g.y, "#FFD700");
+                score += Math.floor(10*combo);
+                combo = Math.min(combo+0.1, 5);
+                grinch.tailLength++;
+                gifts.splice(index, 1);
+                if(!easterMode && !easterStage2 && !easterStageV) spawnGift();
+                document.getElementById('score').innerText = score;
+            }
+        });
+
+        if (easterStageV) {
+            twerkFrame += 0.15;
+        } else if (easterStage2) {
+            santaAngle += 0.25; 
+        } else if (santaFrozen > 0) {
+            santaFrozen--;
+        } else {
+            const sdx = grinch.x - santa.x, sdy = grinch.y - santa.y, sd = Math.sqrt(sdx*sdx + sdy*sdy);
+            if(ghostMode > 0) { ghostMode--; santa.x += Math.sin(Date.now()/500)*1.2; santa.y += Math.cos(Date.now()/500)*1.2; }
+            else {
+                let sSpd = Math.min(SANTA_BASE_SPEED + (score/25), 4.8);
+                let maxSlow = 0; isSlowingSanta = false;
+                grinch.history.forEach((p, i) => { 
+                    if(i%5===0 && Math.sqrt((santa.x-p.x)**2+(santa.y-p.y)**2) < 32 * grinch.sizeScale) {
+                        let slowPotential = 0.55 * (1 - (i / grinch.history.length) * 0.5);
+                        if(slowPotential > maxSlow) maxSlow = slowPotential;
+                        isSlowingSanta = true;
+                    }
+                });
+                if(isSlowingSanta) sSpd *= (1 - maxSlow);
+                santa.x += (sdx/sd)*sSpd; santa.y += (sdy/sd)*sSpd;
+                if(sd < 28 * grinch.sizeScale) { 
+                    if(shieldActive) { shieldActive = false; createExplosion(santa.x, santa.y, "#facc15"); santa.x = 0; santa.y = 0; clearNotify(); } 
+                    else finishGame(); 
+                }
+            }
+        }
+
+        boosts.forEach((b, index) => {
+            if(b.active && Math.sqrt((grinch.x-b.x)**2+(grinch.y-b.y)**2) < 45 * grinch.sizeScale) {
+                createExplosion(b.x, b.y, b.color);
+                applyBoost(b.icon, b.label, b.color);
+                boosts.splice(index, 1);
+            }
+        });
+        
+        if(grinch.frenzy) { frenzyTimer--; if(frenzyTimer <= 0) { grinch.frenzy = false; clearNotify(); }}
+        if(magnetMode > 0) magnetMode--;
+        
+        updateTimers();
+        particles.forEach(p => p.update()); particles = particles.filter(p => p.life > 0);
+        document.getElementById('combo').innerText = `x${combo.toFixed(1)}`;
+        if(grinch.x < 0 || grinch.x > canvas.width || grinch.y < 0 || grinch.y > canvas.height) finishGame();
+    }
+
+    function updateTimers() {
+        const timerUI = document.getElementById('timer-ui');
+        if(!timerUI) return;
+        if(grinch.frenzy) timerUI.innerText = (frenzyTimer/60).toFixed(1) + "s";
+        else if(ghostMode > 0) timerUI.innerText = (ghostMode/60).toFixed(1) + "s";
+        else if(magnetMode > 0) timerUI.innerText = (magnetMode/60).toFixed(1) + "s";
+        else if(santaFrozen > 0) timerUI.innerText = (santaFrozen/60).toFixed(1) + "s";
+    }
+
+    function clearNotify() { document.getElementById('boost-notify').innerHTML = ''; }
+
+    function applyBoost(type, label, color) {
+        if (type === "⚡") { grinch.frenzy = true; frenzyTimer = 600; }
+        else if (type === "❄️") santaFrozen = 400;
+        else if (type === "🧲") magnetMode = 500;
+        else if (type === "🛡️") shieldActive = true;
+        else if (type === "👻") ghostMode = 450;
+
+        document.getElementById('boost-notify').innerHTML = `<div class="boost-card" style="border-color: ${color}">
+            <span style="font-size: 24px;">${type}</span>
+            <div><div class="stat-label" style="color:${color}">${label}</div><div class="stat-value" id="timer-ui" style="font-size:14px">0.0s</div></div>
+        </div>`;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (magnetMode > 0) {
+            ctx.save(); ctx.beginPath(); ctx.setLineDash([5, 15]);
+            ctx.strokeStyle = `rgba(239, 68, 68, 0.25)`;
+            ctx.lineWidth = 2; ctx.arc(grinch.x, grinch.y, MAGNET_RADIUS * grinch.sizeScale, 0, Math.PI*2); ctx.stroke(); ctx.restore();
+        }
+
+        particles.forEach(p => p.draw());
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        
+        gifts.forEach(g => { ctx.font = "30px Arial"; ctx.fillText("🎁", g.x, g.y); });
+
+        boosts.forEach(b => {
+            if(b.active) { ctx.save(); ctx.font = "30px Arial"; ctx.shadowBlur = 15; ctx.shadowColor = b.color; ctx.fillText(b.icon, b.x, b.y); ctx.restore(); }
+        });
+
+        if (easterStageV) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const bounce = Math.sin(twerkFrame) * 20;
+            const shake = Math.cos(twerkFrame * 2) * 15;
+            
+            ctx.save();
+            ctx.font = "160px Arial";
+            ctx.fillText("🍑", centerX + shake, centerY + bounce + 40);
+            ctx.font = "120px Arial";
+            ctx.fillText("🦊", centerX, centerY - 60);
+            ctx.restore();
+        }
+
+        ctx.save();
+        if (easterStage2) {
+            ctx.translate(santa.x, santa.y);
+            ctx.rotate(santaAngle);
+            ctx.font = "40px Arial";
+            ctx.fillText("🎅", 0, 0);
+        } else if(santaFrozen > 0) { 
+            ctx.font = "30px Arial"; ctx.shadowBlur = 15; ctx.shadowColor = "#38bdf8"; ctx.fillText("🧊", santa.x, santa.y); 
+        } else if(ghostMode > 0) { 
+            ctx.font = "30px Arial"; ctx.globalAlpha = 0.3; ctx.fillText("🎅", santa.x, santa.y); 
+        } else if (!easterStageV) { 
+            ctx.font = "30px Arial"; ctx.shadowBlur = 15; ctx.shadowColor = "red"; ctx.fillText("🎅", santa.x, santa.y); 
+            if(isSlowingSanta) { ctx.font = "15px Arial"; ctx.fillText("❄️", santa.x+20, santa.y-20); }
+        }
+        ctx.restore();
+
+        grinch.history.forEach((pos, i) => {
+            if(i % 5 === 0 && i > 0) {
+                ctx.save(); ctx.globalAlpha = 1 - (i/grinch.history.length);
+                ctx.fillStyle = grinch.frenzy ? "#38bdf8" : (shieldActive ? "#facc15" : "#4ade80");
+                ctx.beginPath(); ctx.arc(pos.x, pos.y, Math.max(7, 14 - (i/10)) * grinch.sizeScale, 0, Math.PI*2); ctx.fill(); ctx.restore();
+            }
+        });
+
+        ctx.save(); 
+        ctx.font = (42 * grinch.sizeScale) + "px Arial";
+        if(shieldActive) { ctx.shadowBlur = 20; ctx.shadowColor = "#facc15"; }
+        else if(grinch.frenzy) { ctx.shadowBlur = 25; ctx.shadowColor = "#38bdf8"; }
+        ctx.fillText(ghostMode > 0 ? "👻" : (grinch.frenzy ? "😈" : "🤢"), grinch.x, grinch.y);
+        ctx.restore();
+
+        requestAnimationFrame(draw);
+    }
+
+    function finishGame() {
+        gameActive = false; isPaused = false;
+        easterMode = false; easterStage2 = false; easterStageV = false;
+        document.getElementById('gameOver').style.display = 'flex';
+        document.getElementById('pauseMenu').style.display = 'none';
+        document.getElementById('finalScore').innerText = `Результат: ${score}`;
+        if(score > best) { best = score; localStorage.setItem('grinchBest', best); document.getElementById('best').innerText = best; }
+    }
+
+    function resetGame() {
+        score = 0; combo = 1; santaFrozen = 0; ghostMode = 0; shieldActive = false; magnetMode = 0; 
+        easterMode = false; easterStage2 = false; easterStageV = false;
+        grinch.history = []; grinch.tailLength = 10; grinch.frenzy = false; grinch.sizeScale = 1;
+        santa = { x: 50, y: 50 }; gifts = []; boosts = [];
+        document.getElementById('score').innerText = "0";
+        const msg = document.getElementById('easter-egg-msg');
+        msg.classList.remove('rainbow-text');
+        clearNotify(); 
+        document.getElementById('gameOver').style.display = 'none';
+        document.getElementById('pauseMenu').style.display = 'none';
+        gameActive = true; isPaused = false;
+        spawnGift();
+    }
+
+    spawnGift();
+    setInterval(update, 1000/60);
+    draw();
+    document.getElementById('best').innerText = best;
+</script>
+</body>
+</html>

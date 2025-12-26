@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Dino — Evolution</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+
+        :root {
+            --bg: #020617;
+            --accent: #38bdf8;
+            --dino: #4ade80;
+            --danger: #ef4444;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            transition: all 0.5s ease;
+        }
+
+        * { box-sizing: border-box; cursor: none !important; }
+        body {
+            margin: 0; background: var(--bg); color: white;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden; display: flex; align-items: center;
+            justify-content: center; height: 100vh;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            text-decoration: none;
+            color: white;
+            background: var(--card-bg);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            font-weight: 600;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateX(5px);
+        }
+
+        #game-container { position: relative; }
+
+        canvas { 
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.3) 0%, transparent 100%);
+            border-radius: 28px; border: 2px solid var(--accent); 
+            box-shadow: 0 0 60px rgba(0,0,0,0.6);
+            display: block;
+        }
+
+        /* Сайд-бар */
+        .side-menu {
+            position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+            background: var(--card-bg); border: 2px solid var(--accent);
+            border-left: none; border-radius: 0 24px 24px 0; padding: 25px 15px;
+            display: flex; flex-direction: column; gap: 15px; z-index: 1100;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+        }
+        .side-menu-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); font-weight: 800; text-align: center; }
+        .menu-item {
+            color: white; text-decoration: none; font-size: 13px; font-weight: 700;
+            padding: 12px 20px; border-radius: 12px; background: rgba(255,255,255,0.03);
+            transition: 0.3s; text-align: center; border: 1px solid var(--glass-border);
+        }
+        .menu-item:hover, .menu-item.active { background: var(--accent); color: #000; transform: translateX(10px); }
+
+        /* UI */
+        .game-ui {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 40px; background: var(--card-bg); 
+            padding: 12px 40px; border-radius: 100px;
+            border: 2px solid var(--accent); backdrop-filter: blur(15px); z-index: 10;
+        }
+        .stat-item { text-align: center; }
+        .stat-label { font-size: 10px; text-transform: uppercase; color: var(--accent); font-weight: 800; }
+        .stat-value { font-size: 26px; font-weight: 800; text-shadow: 0 0 10px var(--accent); }
+
+        .game-over {
+            position: absolute; inset: 0; background: rgba(2,6,23,0.95);
+            display: none; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 1000; border-radius: 28px; text-align: center; padding: 20px;
+        }
+
+        .btn-restart { 
+            background: var(--accent); color: #000; border: none; 
+            padding: 18px 45px; border-radius: 15px; font-weight: 800; 
+            cursor: pointer; transition: 0.3s; font-family: inherit; margin-top: 20px;
+        }
+        .btn-restart:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--accent); }
+
+        #level-text {
+            position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+            font-size: 50px; font-weight: 900; color: var(--accent);
+            text-shadow: 0 0 20px var(--accent); pointer-events: none;
+            opacity: 0; z-index: 50;
+        }
+        .animate-pop { animation: popFade 1.5s forwards; }
+
+        @keyframes popFade {
+            0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -20px) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -40px) scale(1); opacity: 0; }
+        }
+
+        #cursor { width: 10px; height: 10px; background: white; border-radius: 50%; position: fixed; pointer-events: none; z-index: 10000; transform: translate(-50%, -50%); box-shadow: 0 0 15px white; }
+    </style>
+</head>
+<body>
+<a href="/portfolio" class="back-link">
+    <span>←</span> Назад в портфолио
+</a>
+<div id="cursor"></div>
+
+<nav class="side-menu">
+    <div class="side-menu-title">New Year Hub</div>
+    <a href="/game/grinch" class="menu-item">🐲 ЗМЕЙКА</a>
+    <a href="/game/puzzles" class="menu-item">🧩 ПАЗЛЫ</a>
+    <a href="/game/ratatype" class="menu-item">⌨️ ТРЕНАЖЕР</a>
+    <a href="/game/gd" class="menu-item">🟦 GEODASH</a>
+    <a href="/game/photo" class="menu-item">📸 PHOTOEDITOR</a>
+    <a href="/game/dino" class="menu-item active">🦖 ДИНОЗАВРИК</a>
+    <a href="/game/clicker" class="menu-item">💎 КЛИКЕР</a>
+</nav>
+
+<div id="game-container">
+    <div id="level-text">НОВЫЙ БИОМ</div>
+    <div class="game-ui">
+        <div class="stat-item"><div class="stat-label">ДИСТАНЦИЯ</div><div class="stat-value" id="score">0</div></div>
+        <div class="stat-item"><div class="stat-label">РЕКОРД</div><div class="stat-value" id="best">0</div></div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <h1 id="deathTitle" style="font-size: 50px; color: var(--danger); margin: 0; text-shadow: 0 0 30px var(--danger);">СИСТЕМА СБОИТ</h1>
+        <p id="deathMsg" style="font-size: 20px; margin: 15px 0; color: white; opacity: 0.8; max-width: 500px;"></p>
+        <p id="finalScore" style="font-size: 28px; font-weight: 800; color: var(--accent);"></p>
+        <button class="btn-restart" onclick="resetGame()">ПЕРЕЗАГРУЗКА</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const cursor = document.getElementById('cursor');
+    const levelText = document.getElementById('level-text');
+    
+    canvas.width = 1100; canvas.height = 550;
+
+    let score = 0, best = localStorage.getItem('dinoEvolutionBest') || 0;
+    let gameActive = true, gameSpeed = 8, currentBiome = 0;
+    let particles = [], obstacles = [], bgDecor = [];
+    let nextObstacleTimer = 0;
+    let shakeIntensity = 0;
+
+    const deathPhrases = [
+        "Твой динозавр превратился в пыль!",
+        "Слишком быстро для тебя?",
+        "Ошибка 404: Динозавр не найден.",
+        "Это был кактус. Он колючий. Кто бы мог подумать?",
+        "Game Over. Даже метеорит не понадобился.",
+        "Попробуй нажать пробел чуть раньше...",
+        "Твоя реакция как у ленивца!",
+        "Динозавр устал и решил прилечь.",
+        "Хьюстон, у нас проблемы. Динозавр врезался."
+    ];
+
+    const biomes = [
+        { accent: '#38bdf8', bg: '#020617', name: 'КИБЕРПАНК', decor: '🛸', enemies: ['🌵', '🛰️', '🦅'] },
+        { accent: '#facc15', bg: '#1c1917', name: 'ПУСТЫНЯ', decor: '☀️', enemies: ['🌵', '🌵🌵', '🦅'] },
+        { accent: '#a855f7', bg: '#0f172a', name: 'БЕЗДНА', decor: '🪐', enemies: ['👻', '👾', '☄️'] },
+        { accent: '#f43f5e', bg: '#180202', name: 'АД ПРЕМЬЕР', decor: '🔥', enemies: ['🔥', '💣', '👹'] }
+    ];
+
+    const dino = {
+        x: 120, y: canvas.height - 110,
+        width: 70, height: 80,
+        vY: 0, gravity: 0.9, jumpPower: -21,
+        grounded: true, emoji: "🦖"
+    };
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x; this.y = y; this.color = color;
+            this.size = Math.random() * 5 + 2;
+            this.vX = (Math.random() - 0.5) * 12;
+            this.vY = (Math.random() - 0.5) * 12;
+            this.life = 1.0;
+        }
+        update() { this.x += this.vX; this.y += this.vY; this.life -= 0.03; }
+        draw() {
+            ctx.save(); ctx.globalAlpha = this.life; ctx.fillStyle = this.color;
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); ctx.restore();
+        }
+    }
+
+    class BackgroundObject {
+        constructor() { this.reset(true); }
+        reset(isStart = false) {
+            this.x = isStart ? Math.random() * canvas.width : canvas.width + 100;
+            this.y = Math.random() * (canvas.height - 250);
+            this.size = Math.random() * 40 + 25;
+            this.speed = Math.random() * 1.5 + 0.5;
+            this.opacity = Math.random() * 0.3 + 0.1;
+        }
+        update() {
+            this.x -= this.speed * (gameSpeed/6);
+            if (this.x < -100) this.reset();
+        }
+        draw() {
+            ctx.save(); ctx.globalAlpha = this.opacity;
+            ctx.font = `${this.size}px Arial`;
+            ctx.fillText(biomes[currentBiome].decor, this.x, this.y);
+            ctx.restore();
+        }
+    }
+
+    for(let i=0; i<8; i++) bgDecor.push(new BackgroundObject());
+
+    function createExplosion(x, y, color) {
+        for(let i=0; i<25; i++) particles.push(new Particle(x, y, color));
+    }
+
+    function changeBiome(index) {
+        if (currentBiome === index) return;
+        currentBiome = index;
+        const b = biomes[index];
+        document.documentElement.style.setProperty('--accent', b.accent);
+        document.documentElement.style.setProperty('--bg', b.bg);
+        
+        levelText.innerText = b.name;
+        levelText.classList.remove('animate-pop');
+        void levelText.offsetWidth;
+        levelText.classList.add('animate-pop');
+        shakeIntensity = 12;
+    }
+
+    window.addEventListener('keydown', e => {
+        if ((e.code === 'Space' || e.code === 'ArrowUp') && dino.grounded && gameActive) jump();
+    });
+    canvas.addEventListener('mousedown', () => {
+        if(dino.grounded && gameActive) jump();
+    });
+
+    function jump() {
+        dino.vY = dino.jumpPower;
+        dino.grounded = false;
+        createExplosion(dino.x + 10, dino.y + 70, "rgba(255,255,255,0.3)");
+    }
+
+    function spawnObstacle() {
+        const currentEnemies = biomes[currentBiome].enemies;
+        const emoji = currentEnemies[Math.floor(Math.random() * currentEnemies.length)];
+        const isAir = emoji === '🦅' || emoji === '🛰️' || emoji === '☄️';
+        
+        obstacles.push({
+            x: canvas.width + 100,
+            y: isAir ? canvas.height - 210 : canvas.height - 105,
+            width: 60, height: 70,
+            emoji: emoji
+        });
+    }
+
+    function gameLoop() {
+        if (gameActive) {
+            update();
+        }
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        if (shakeIntensity > 0) shakeIntensity *= 0.9;
+
+        // Дино
+        dino.vY += dino.gravity;
+        dino.y += dino.vY;
+        if (dino.y > canvas.height - 110) {
+            dino.y = canvas.height - 110;
+            dino.vY = 0;
+            dino.grounded = true;
+        }
+
+        // Препятствия
+        nextObstacleTimer--;
+        if (nextObstacleTimer <= 0) {
+            spawnObstacle();
+            nextObstacleTimer = Math.max(30, 80 - (score / 250));
+        }
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let obs = obstacles[i];
+            obs.x -= gameSpeed;
+
+            // Коллизия
+            if (dino.x < obs.x + obs.width - 25 && dino.x + dino.width - 25 > obs.x &&
+                dino.y < obs.y + obs.height - 20 && dino.y + dino.height - 20 > obs.y) {
+                finishGame();
+            }
+
+            if (obs.x < -150) obstacles.splice(i, 1);
+        }
+
+        score++;
+        const curScore = Math.floor(score/10);
+        if (curScore >= 300) changeBiome(3);
+        else if (curScore >= 200) changeBiome(2);
+        else if (curScore >= 100) changeBiome(1);
+
+        gameSpeed = 8 + (score / 900);
+        bgDecor.forEach(d => d.update());
+        
+        for (let i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            if (particles[i].life <= 0) particles.splice(i, 1);
+        }
+
+        document.getElementById('score').innerText = curScore;
+    }
+
+    function draw() {
+        ctx.save();
+        if (shakeIntensity > 1) {
+            ctx.translate((Math.random() - 0.5) * shakeIntensity, (Math.random() - 0.5) * shakeIntensity);
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+
+        // Фон
+        bgDecor.forEach(d => d.draw());
+
+        // Пол
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height - 35);
+        ctx.lineTo(canvas.width, canvas.height - 35);
+        ctx.stroke();
+
+        // Частицы
+        particles.forEach(p => p.draw());
+
+        // Препятствия
+        ctx.textAlign = "center";
+        ctx.font = "60px Arial";
+        obstacles.forEach(obs => {
+            ctx.fillText(obs.emoji, obs.x + obs.width/2, obs.y + 60);
+        });
+
+        // Дино
+        ctx.save();
+        ctx.translate(dino.x + dino.width/2, dino.y + dino.height/2);
+        if (!dino.grounded) ctx.rotate(dino.vY * 0.015);
+        ctx.scale(-1, 1);
+        ctx.font = "85px Arial";
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = "#4ade80";
+        ctx.fillText(dino.emoji, 0, 30);
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    function finishGame() {
+        gameActive = false;
+        shakeIntensity = 25;
+        createExplosion(dino.x + 35, dino.y + 40, "#ef4444");
+        
+        document.getElementById('gameOver').style.display = 'flex';
+        document.getElementById('deathMsg').innerText = deathPhrases[Math.floor(Math.random() * deathPhrases.length)];
+        document.getElementById('finalScore').innerText = `Счёт: ${Math.floor(score/10)}`;
+        
+        if(Math.floor(score/10) > best) {
+            best = Math.floor(score/10);
+            localStorage.setItem('dinoEvolutionBest', best);
+            document.getElementById('best').innerText = best;
+        }
+    }
+
+    function resetGame() {
+        score = 0; gameSpeed = 8; obstacles = []; currentBiome = 0;
+        dino.y = canvas.height - 110; dino.vY = 0; gameActive = true;
+        changeBiome(0);
+        document.getElementById('gameOver').style.display = 'none';
+    }
+
+    document.addEventListener('mousemove', e => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+    });
+
+    gameLoop(); // Запуск основного цикла
+    document.getElementById('best').innerText = best;
+</script>
+</body>
+</html>
