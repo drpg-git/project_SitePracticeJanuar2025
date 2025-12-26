@@ -23,7 +23,7 @@
 
 1. Клонируйте репозиторий:
 
-   git clone [https://github.com/ВАШ_НИК/ВАШ_РЕПОЗИТОРИЙ.git](https://github.com/ВАШ_НИК/ВАШ_РЕПОЗИТОРИЙ.git)
+   git clone [https://github.com/drpg-git/project_SitePracticeJanuar2025.git](https://github.com/drpg-git/project_SitePracticeJanuar2025.git)
    cd название_папки
 
 2. Установите зависимости:
