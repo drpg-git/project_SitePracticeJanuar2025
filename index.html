@@ -303,18 +303,37 @@
     };
 
 
-  document.getElementById('shutdown-btn').addEventListener('click', function() {
-      if(confirm("Вы действительно хотите остановить сервер?")) {
-          fetch('/shutdown', { method: 'POST' })
-              .then(response => response.text())
-              .then(msg => {
-                  alert(msg || "Сервер остановлен");
-              })
-              .catch(err => {
-                  alert("Не удалось остановить сервер: " + err);
-              });
-      }
-  });
+ // Находим кнопку и вешаем на неё правильную функцию
+document.getElementById('shutdown-btn').addEventListener('click', async function() {
+    if (confirm("Вы действительно хотите завершить работу приложения?")) {
+        try {
+            // 1. Отправляем запрос серверу
+            const response = await fetch('/shutdown', { method: 'POST' });
+
+            if (response.ok) {
+                // 2. Визуально уведомляем, что всё ок
+                console.log("Сервер получил сигнал на отключение");
+
+                // 3. Пытаемся закрыть вкладку (хак для обхода защиты браузера)
+                window.open('', '_self'); 
+                window.close();
+
+                // 4. Если браузер запретил закрытие, меняем интерфейс
+                document.body.innerHTML = `
+                    <div style="background:#020617; color:white; height:100vh; display:flex; 
+                                flex-direction:column; align-items:center; justify-content:center; 
+                                font-family:sans-serif; text-align:center;">
+                        <h1 style="color:#38bdf8; font-size: 48px;">❄️</h1>
+                        <h1 style="color:white;">Приложение остановлено</h1>
+                        <p style="color:#cbd5e1;">Сервер выключен. Теперь вы можете закрыть это окно.</p>
+                    </div>`;
+            }
+        } catch (err) {
+            // Если сервер уже упал к этому моменту, просто пишем об этом
+            console.log("Соединение с сервером потеряно (он успешно выключился)");
+        }
+    }
+});
 
   async function terminateApp() {
     try {
